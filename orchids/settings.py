@@ -25,7 +25,7 @@ SECRET_KEY = 'x3i#j^yjm@$2yye7=zjz-uy_q#f4ny*v3n)m&e6())6^l8df4%'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [u'10.100.101.6', u'10.100.101.46', u'0.0.0.0']
 
 
 # Application definition
@@ -40,7 +40,7 @@ INSTALLED_APPS = [
 
     # 3rd parties
     'django_extensions',
-    # 'bootstrap3',
+    'bootstrap3',
 
     # my app
     'orchid_app',
