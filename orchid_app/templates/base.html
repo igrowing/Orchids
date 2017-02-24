@@ -1,0 +1,84 @@
+{% load staticfiles bootstrap3 %}
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <title>{% block title %}Home{% endblock %} - Orchids</title>
+    <link rel="stylesheet" href="{% static "bootstrap/css/bootstrap.css" %}">
+    <link rel="stylesheet" href="{% static "base.css" %}">
+    <link rel="shortcut icon" href="{% static "favicon.png" %}"/>
+
+</head>
+<body>
+
+<nav class="navbar navbar-inverse">
+    <div class="container">
+        <div class="navbar-header">
+            <a class="navbar-brand"%}">
+                Orchids
+            </a>
+        </div>
+
+        <div class="collapse navbar-collapse"
+             id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li>
+                    <a href="{% url "orchid_app:sensors" %}">Sensors</a>
+                </li>
+                <li>
+                    <a href="{% url "orchid_app:actions" %}">Actions</a>
+                </li>
+
+            </ul>
+            <form action="{% url "orchid_app:list" %}"
+                  class="navbar-form navbar-left">
+                <div class="form-group">
+                    <input type="text" class="form-control"
+                           value="{{ term|default:'' }}"
+                           placeholder="Search" name="q">
+                </div>
+                <button type="submit" class="btn btn-default"><span
+                        class="glyphicon glyphicon-search"></span> Search
+                </button>
+            </form>
+            <ul class="nav navbar-nav navbar-right">
+                {% if user.id %}
+                    <li>
+                        <span class="navbar-text">
+                            {{ user }}
+                        </span>
+                    </li>
+                    <li>
+                        <a href='{% url "logout" %}'>Logout</a>
+                    </li>
+                {% else %}
+                    <li>
+                        <a href='{% url "login" %}'>Login</a>
+                    </li>
+                {% endif %}
+            </ul>
+
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div id="main">
+
+        {% bootstrap_messages %}
+
+        {% block content %}
+            MY CONTENT SHOULD GO HERE
+        {% endblock %}
+    </div>
+
+    <hr/>
+
+    <div class="pretty beautiful">
+        &copy; Copyright 2017
+    </div>
+</div>
+
+</body>
+</html>

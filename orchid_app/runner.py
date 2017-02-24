@@ -11,7 +11,7 @@ from threading import Thread
 
 # from django.db import models
 # from django.urls import reverse
-# from django.conf import settings
+from django.conf import settings
 from django.utils.six import python_2_unicode_compatible
 import paho.mqtt.subscribe as subscribe
 

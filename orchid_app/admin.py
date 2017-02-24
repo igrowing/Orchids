@@ -1,3 +1,7 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import Sensors
+from .models import Actions
+
+admin.site.register(Sensors)
+admin.site.register(Actions)

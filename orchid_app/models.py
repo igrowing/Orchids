@@ -17,6 +17,9 @@ class Sensors(models.Model):
     wind = models.DecimalField(max_digits=3, decimal_places=2)
     water = models.DecimalField(max_digits=3, decimal_places=2)
 
+    def get_absolute_url(self):
+        return reverse("sensors:detail", args=(self.id,))
+
     def __str__(self):
         return "[@{}] t_amb{} t_obj{} rh{} hpa{}".format(
             self.date,
@@ -25,9 +28,6 @@ class Sensors(models.Model):
             self.rh,
             self.hpa,
         )
-
-#    def get_absolute_url(self):
-#        return reverse("sensors:detail", args=(self.id,))
 
 
 @python_2_unicode_compatible
