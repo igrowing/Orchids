@@ -1,3 +1,34 @@
+<h1>Orchids</h1>
+<hr>
+<form action="" method="post">{% csrf_token %}
+{% if messages %}
+<ul class="messages">
+    {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<!--  <label for="mist"><input type="checkbox" name="mist" value="mist" id="mist"> Mist</label><br>
+  <label for="drip"><input type="checkbox" name="drip" value="drip" id="drip"> Drip</label><br>
+  <label for="fan"><input type="checkbox" name="fan" value="fan" id="fan"> Fan</label><br>
+  <label for="light"><input type="checkbox" name="light" value="light" id="light"> Light</label><br>
+  <label for="heat"><input type="checkbox" name="heat" value="heat" id="heat"> Heat</label><br>
+  -->
+<!--
+  <label for="mist"><input type="checkbox" name="actions" value="mist" id="mist"> Mist</label><br>
+  <label for="drip"><input type="checkbox" name="actions" value="drip" id="drip"> Drip</label><br>
+  <label for="fan"><input type="checkbox" name="actions" value="fan" id="fan"> Fan</label><br>
+  <label for="light"><input type="checkbox" name="actions" value="light" id="light"> Light</label><br>
+  <label for="heat"><input type="checkbox" name="actions" value="heat" id="heat"> Heat</label><br>
+-->
+    {{ form.as_p }}
+
+    <input type="submit" value="Ready? Go!">
+</form>
+
+<hr>
+
 {% if object_list %}
     <ul>
         {% for object in object_list %}
