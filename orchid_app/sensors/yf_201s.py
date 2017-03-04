@@ -8,6 +8,7 @@ Author: Igor Yanyutin.
 
 import time
 import RPi.GPIO as GPIO
+import subprocess as sp
 
 # Get ready to post MQTT status. Install the library first.
 # sudo pip install paho-mqtt
@@ -28,9 +29,13 @@ def run():
     s = m = h = d = time.time()
     global _counter_s, _counter_m, _counter_h, _counter_d
     while True:
+        # sp.Popen(['logger', 'Read water'], stdout=sp.PIPE, stderr=sp.PIPE).communicate()  # Debug msg
         # Increase counter only in case of actual trigger, not timeout.
-        if GPIO.wait_for_edge(pin, GPIO.FALLING, bouncetime=1, timeout=1000):  # times in ms
-            _counter_s += 1
+        try:  # Weird workaround for "Error: waiting for edge" :-(
+            if GPIO.wait_for_edge(pin, GPIO.FALLING, bouncetime=1, timeout=1000):  # times in ms
+                _counter_s += 1
+        except RuntimeError:
+            continue
         if time.time() - s > 1:   # more than a sec
             publish.single("shm/orchid/water/last_sec", _counter_s / TICKS_L, retain=False, hostname="localhost")
             s = time.time()
@@ -55,6 +60,6 @@ def run():
 # Use this trick to execute the file. Normally, it's a module to be imported.
 if __name__ == "__main__":
     print 'Subscribe to data with:'
-    print 'mosquitto_sub -t #'
+    print 'mosquitto_sub -t "#"'
     print 'Search for water :)'
     run()

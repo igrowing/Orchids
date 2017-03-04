@@ -9,6 +9,12 @@ import sensors.bme280 as bme
 import time
 from threading import Thread
 
+# Load Django to write the data into the tables
+import os
+os.environ['DJANGO_SETTINGS_MODULE'] = 'orchid_app.settings'
+import django
+django.setup()
+
 # from django.db import models
 # from django.urls import reverse
 from django.conf import settings

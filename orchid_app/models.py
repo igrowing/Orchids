@@ -21,12 +21,15 @@ class Sensors(models.Model):
         return reverse("sensors:detail", args=(self.id,))
 
     def __str__(self):
-        return "[@{}] t_amb{} t_obj{} rh{} hpa{}".format(
+        return "[@{}] t_amb: {}, t_obj:{}, rh:{}, hpa:{}, lux:{}, water:{}, wind:{}".format(
             self.date,
             self.t_amb,
             self.t_obj,
             self.rh,
             self.hpa,
+            self.lux,
+            self.water,
+            self.wind,
         )
 
 
