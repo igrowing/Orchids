@@ -9,7 +9,8 @@ import orchid_app.sensors.bme280 as bme
 import time
 from threading import Thread
 
-from django.template.defaultfilters import floatformat
+from decimal import Decimal
+#from django.template.defaultfilters import floatformat
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
@@ -93,18 +94,18 @@ class Command(BaseCommand):
             decimal.getcontext().prec = 1
             self.stdout.write("Start postprocess" + str(water_data + wind_data))
             # Data conditioning by model/DB requirements
-            s.t_amb = floatformat(s.t_amb, 2)
-            s.t_obj = floatformat(s.t_obj, 2)
-            s.water = floatformat(s.water, 2)
-            s.wind = floatformat(s.wind, 2)
-            s.hpa = floatformat(s.hpa, 1)
+            s.t_amb = Decimal('{:.1f}'.format(s.t_amb))
+            s.t_obj = Decimal('{:.1f}'.format(s.t_obj))
+            s.water = Decimal('{:.1f}'.format(s.water))
+            s.wind = Decimal('{:.1f}'.format(s.wind))
+            s.hpa = Decimal('{:.1f}'.format(s.hpa))
             s.rh = int(s.rh)
             s.lux = int(s.lux)
             self.stdout.write(str(s))
 
             # Write data to the DB
-            # s.save()
-            self.stdout.write(repr(Sensors.objects.count()))
+            s.save()
+            self.stdout.write('Redords: ' + repr(Sensors.objects.count()))
             dt = 1.0 * POLL_PERIOD - (time.time() - t)
             self.stdout.write("Sleeping... " + str(dt) + str(water_data))
             time.sleep(dt)

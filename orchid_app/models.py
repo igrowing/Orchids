@@ -9,13 +9,13 @@ from django.utils.six import python_2_unicode_compatible
 @python_2_unicode_compatible
 class Sensors(models.Model):
     date = models.DateField(unique_for_date=True)
-    t_amb = models.DecimalField(max_digits=2, decimal_places=2)
-    t_obj = models.DecimalField(max_digits=2, decimal_places=2)
+    t_amb = models.DecimalField(max_digits=4, decimal_places=1)
+    t_obj = models.DecimalField(max_digits=4, decimal_places=1)
     rh = models.PositiveIntegerField()
-    hpa = models.DecimalField(max_digits=4, decimal_places=1)
+    hpa = models.DecimalField(max_digits=5, decimal_places=1)
     lux = models.PositiveIntegerField()
-    wind = models.DecimalField(max_digits=3, decimal_places=2)
-    water = models.DecimalField(max_digits=3, decimal_places=2)
+    wind = models.DecimalField(max_digits=4, decimal_places=2)
+    water = models.DecimalField(max_digits=4, decimal_places=2)
 
     def get_absolute_url(self):
         return reverse("sensors:detail", args=(self.id,))
