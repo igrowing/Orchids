@@ -6,7 +6,7 @@ import getopt
 import argparse
 import RPi.GPIO as GPIO
 
-relays = {1: 5, 2: 6, 3: 12}  # Channels 1, 2, 3 accordingly
+relays = {1: 17, 2: 18, 3: 27, 4: 22}  # Channels 1, 2, 3 accordingly
 GPIO.setwarnings(False)       # Disable warnings
 statuses = ('off', 'on')
 
@@ -26,20 +26,21 @@ Authors: Igor Yanyutin,
 ''' % locals()
 
 class Relay(object):
-    def __init__(self, relay):
+    def __init__(self, relay, active_low=True):
         GPIO.setmode(GPIO.BCM)
         # Determine GPIOs to work with
         self.relayIO = relays[relay]
+        self.active_low = active_low
 
     def get_status(self):
         GPIO.setup(self.relayIO, GPIO.OUT)
-        return GPIO.input(self.relayIO)
+        return self.active_low ^ GPIO.input(self.relayIO)
 
     def set_status(self, status):
         '''For status use 0 or 1 as off and on accordingly.'''
 
         GPIO.setup(self.relayIO, GPIO.OUT)
-        GPIO.output(self.relayIO, status)
+        GPIO.output(self.relayIO, self.active_low ^ status)
 
 
 def main():

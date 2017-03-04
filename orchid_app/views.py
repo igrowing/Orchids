@@ -66,7 +66,7 @@ def _activate(**kwargs):
         elif k == 'fan':
             actuators.Relay(1).set_status(v)
         elif k == 'light':
-            pass
+            actuators.Relay(2).set_status(v)
         elif k == 'heat':
             pass
         else:
