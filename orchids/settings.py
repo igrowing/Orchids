@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     # 3rd parties
     'django_extensions',
     'bootstrap3',
+    'django_tables2',
 
     # my app
     'orchid_app',
@@ -131,3 +132,7 @@ MEDIA_URL = '/uploads/'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+#SHORT_DATETIME_FORMAT = u'%Y-%m-%d %H:%M'
+SHORT_DATETIME_FORMAT = u'Y N j, H:i:s.u'
+

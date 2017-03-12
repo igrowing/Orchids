@@ -1,3 +1,5 @@
+{% load django_tables2 %}
+
 <h1>Orchids</h1>
 <hr>
 <form action="" method="post">{% csrf_token %}
@@ -29,14 +31,36 @@
 
 <hr>
 
-{% if object_list %}
+Total {{total}} records.<br>
+
+{% if table %}
+    <div class="pagination">
+        <span class="step-links">
+            {% if paginator.has_previous %}
+                <a href="?page={{ paginator.previous_page_number }}"><< previous</a>
+            {% endif %}
+
+            <span class="current">
+                Page {{ paginator.number }} of {{ paginator.paginator.num_pages }}.
+            </span>
+
+            {% if paginator.has_next %}
+                <a href="?page={{ paginator.next_page_number }}">next >></a>
+            {% endif %}
+        </span>
+    </div>
+
+    {% render_table table %}
+
+{% comment %}
     <ul>
-        {% for object in object_list %}
+        {% for object in table %}
             <li>
-                {{object.date}}: {{ object.t_amb }} {{ object.rh }}
+                {{object.date}}: {{ object.t_amb }} {{ object.t_obj }} {{ object.rh }} {{ object.lux }} {{ object.hpa }} {{ object.wind }} {{ object.water }}
             </li>
         {% endfor %}
     </ul>
+{% endcomment %}
 {% else %}
     <p>No polls are available.</p>
 {% endif %}
