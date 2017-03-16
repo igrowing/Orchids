@@ -12,10 +12,10 @@ import actuators
 
 
 class SimpleTable(tables.Table):
-    # date = tables.DateTimeColumn(short=True)
+    date = tables.DateTimeColumn(short=True)  # still doesn't work.
     class Meta:
         model = models.Sensors
-        sequence = ('date', 't_amb', 't_obj', 'rh', 'lux', 'hpa', 'wind', 'water')
+        fields = ('date', 't_amb', 't_obj', 'rh', 'lux', 'hpa', 'wind', 'water')
 
 
 # @register.filter(name='myDate')

@@ -8,7 +8,7 @@ from django.utils.six import python_2_unicode_compatible
 
 @python_2_unicode_compatible
 class Sensors(models.Model):
-    date = models.DateField(unique_for_date=True)
+    date = models.DateTimeField(unique=True)
     t_amb = models.DecimalField(max_digits=4, decimal_places=1)
     t_obj = models.DecimalField(max_digits=4, decimal_places=1)
     rh = models.PositiveIntegerField()
