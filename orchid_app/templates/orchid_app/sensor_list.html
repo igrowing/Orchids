@@ -36,21 +36,41 @@ Total {{total}} records.<br>
 {% if table %}
     <div class="pagination">
         <span class="step-links">
+            <a href="?page=1">|<< First</a>&nbsp;&nbsp;
             {% if paginator.has_previous %}
-                <a href="?page={{ paginator.previous_page_number }}"><< previous</a>
+                <a href="?page={{ paginator.previous_page_number }}">< Previous</a>&nbsp;&nbsp;
             {% endif %}
 
             <span class="current">
-                Page {{ paginator.number }} of {{ paginator.paginator.num_pages }}.
+                Page {{ paginator.number }} of {{ paginator.paginator.num_pages }}.&nbsp;&nbsp;
             </span>
 
             {% if paginator.has_next %}
-                <a href="?page={{ paginator.next_page_number }}">next >></a>
+                <a href="?page={{ paginator.next_page_number }}">Next ></a>&nbsp;&nbsp;
             {% endif %}
+            <a href="?page={{ paginator.paginator.num_pages }}">Last >>|</a>
         </span>
     </div>
 
     {% render_table table %}
+
+    <div class="pagination">
+        <span class="step-links">
+            <a href="?page=1">|<< First</a>&nbsp;&nbsp;
+            {% if paginator.has_previous %}
+                <a href="?page={{ paginator.previous_page_number }}">< Previous</a>&nbsp;&nbsp;
+            {% endif %}
+
+            <span class="current">
+                Page {{ paginator.number }} of {{ paginator.paginator.num_pages }}.&nbsp;&nbsp;
+            </span>
+
+            {% if paginator.has_next %}
+                <a href="?page={{ paginator.next_page_number }}">Next ></a>&nbsp;&nbsp;
+            {% endif %}
+            <a href="?page={{ paginator.paginator.num_pages }}">Last >>|</a>
+        </span>
+    </div>
 
 {% comment %}
     <ul>
