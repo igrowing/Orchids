@@ -35,7 +35,7 @@ class Sensors(models.Model):
 
 @python_2_unicode_compatible
 class Actions(models.Model):
-    date = models.DateField(unique_for_date=True)
+    date = models.DateTimeField(unique=True)
     mist = models.BooleanField(default=False)
     fan = models.BooleanField(default=False)
     heat = models.BooleanField(default=False)
