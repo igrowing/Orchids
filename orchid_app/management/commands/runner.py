@@ -70,23 +70,30 @@ class Command(BaseCommand):
             t.setDaemon(True)
             t.start()
 
+        import os
+        os.system('logger orchid_runner has started')
+
         data = {'wind': [], 'water': [], 't_amb': [], 't_obj': [], 'hpa': [], 'rh': [], 'lux': []}
         ts = time.time()
 
         while True:
             if time.time() - ts < POLL_PERIOD:
-                # Wait for MQTT data
-                topic = "shm/orchid/wind/last_min"
-                data['wind'].append(float(subscribe.simple(topic, keepalive=65, will={'topic': topic, 'payload': 0.0}).payload))
-                topic = "shm/orchid/water/last_min"
-                data['water'].append(float(subscribe.simple(topic, keepalive=65, will={'topic': topic, 'payload': 0.0}).payload))
-                # Read i2c sensors
-                a, b, c = bme.readBME280All()
-                data['t_amb'].append(a)
-                data['hpa'].append(b)
-                data['rh'].append(c)
-                data['t_obj'].append(mlx.Melexis().readObject1())
-                data['lux'].append(light.readLight())
+                try:  # Catch sensor reading data, stay running
+                    # Wait for MQTT data
+                    topic = "shm/orchid/wind/last_min"
+                    data['wind'].append(float(subscribe.simple(topic, keepalive=65, will={'topic': topic, 'payload': 0.0}).payload))
+                    topic = "shm/orchid/water/last_min"
+                    data['water'].append(float(subscribe.simple(topic, keepalive=65, will={'topic': topic, 'payload': 0.0}).payload))
+                    # Read i2c sensors
+                    a, b, c = bme.readBME280All()
+                    data['t_amb'].append(a)
+                    data['hpa'].append(b)
+                    data['rh'].append(c)
+                    data['t_obj'].append(mlx.Melexis().readObject1())
+                    data['lux'].append(light.readLight())
+                except Exception as e:
+                    self.stderr.write('%s (%s)' % (e.message, type(e)))
+                    time.sleep(60)  # Wait 1 minute before retry.
             else:
                 n = datetime.now()
                 s = Sensors()
@@ -100,9 +107,13 @@ class Command(BaseCommand):
                 s.rh = int(avg(data['rh']))
                 s.lux = int(avg(data['lux']))
                 self.stdout.write(str(s))
-                # Write data to the DB
-                s.save()
-                self.stdout.write('Records: ' + repr(Sensors.objects.count()))
+                try:  # Catch sensor reading data, stay running
+                    # Write data to the DB
+                    s.save()
+                    self.stdout.write('Records: ' + repr(Sensors.objects.count()))
+                except Exception as e:
+                    self.stderr.write('%s (%s)' % (e.message, type(e)))
+                    time.sleep(60)  # Wait 1 minute before retry.
                 # Reset the data structure
                 data = {'wind': [], 'water': [], 't_amb': [], 't_obj': [], 'hpa': [], 'rh': [], 'lux': []}
                 ts = time.time()
