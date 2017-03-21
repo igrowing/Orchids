@@ -1,14 +1,16 @@
-from django.contrib import messages
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-import django_tables2 as tables
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect, get_object_or_404
-from django.urls import reverse
 from django.views.generic import TemplateView, CreateView, FormView, ListView, UpdateView, DetailView
-
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
 from forms import OrchidForm, ActionsForm
+from django.contrib import messages
+from django.urls import reverse
+from datetime import datetime
 from . import models
+
+import django_tables2 as tables
 import actuators
+import sys
 
 
 class SensorTable(tables.Table):
@@ -22,7 +24,7 @@ class ActionTable(tables.Table):
     date = tables.DateTimeColumn(short=True)  # still doesn't work.
     class Meta:
         model = models.Actions
-        fields = ('date', 'water', 'mist', 'fan', 'heat')
+        fields = ('date', 'water', 'mist', 'fan', 'light', 'heat')
 
 
 # @register.filter(name='myDate')
@@ -121,6 +123,10 @@ def _activate(**kwargs):
     #TODO: move out of views!
 
     msg = []
+    a = models.Actions()
+    a.date = datetime.now()
+    a.water = a.mist = a.fan = a.light = a.heat = False
+
     for k, v in kwargs.iteritems():
         if type(v) == unicode:
             if v.lower() in ['on', 'true', 'enable', 'start']:
@@ -132,16 +138,28 @@ def _activate(**kwargs):
         msg.append(k + ': ' + str(v))
         if k == 'mist':
             actuators.LatchingValve(1).set_status(v)
+            a.mist = v
         elif k == 'drip':
             actuators.LatchingValve(2).set_status(v)
+            a.water = v
         elif k == 'fan':
             actuators.Relay(1).set_status(v)
+            a.fan = v
         elif k == 'light':
             actuators.Relay(2).set_status(v)
+            a.light = v
         elif k == 'heat':
-            pass
+            # Do something :)
+            a.heat = v
         else:
             msg[-1] += "<<--Wrong action!"
+
+    try:
+        a.save()
+    except Exception as e:
+        sys.stderr.write('On start: %s (%s)' % (e.message, type(e)))
+
+    sys.stdout.write('Action Records: ' + repr(models.Actions.objects.count()))
 
     return ', '.join(msg)
 
