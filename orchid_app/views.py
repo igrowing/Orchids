@@ -11,11 +11,18 @@ from . import models
 import actuators
 
 
-class SimpleTable(tables.Table):
+class SensorTable(tables.Table):
     date = tables.DateTimeColumn(short=True)  # still doesn't work.
     class Meta:
         model = models.Sensors
         fields = ('date', 't_amb', 't_obj', 'rh', 'lux', 'hpa', 'wind', 'water')
+
+
+class ActionTable(tables.Table):
+    date = tables.DateTimeColumn(short=True)  # still doesn't work.
+    class Meta:
+        model = models.Actions
+        fields = ('date', 'water', 'mist', 'fan', 'heat')
 
 
 # @register.filter(name='myDate')
@@ -42,7 +49,7 @@ def list(request, year=None, month=None):
             else:
                 messages.error(request, "Actions tried: " + msg)
 
-    qs = models.Sensors.objects.all().reverse()  # filter(date=request.date
+    qs = models.Sensors.objects.all().order_by('-date')  # filter(date=request.date
     paginator = Paginator(qs, 30)
     page = request.GET.get('page')
     try:
@@ -55,7 +62,7 @@ def list(request, year=None, month=None):
     # Keep reference to page. Dirty trick. TODO: improve.
     pp = table
     # Convert current page into table.
-    table = SimpleTable(table)
+    table = SensorTable(table)
 
     if year:
         qs = qs.filter(date__year=year)
@@ -70,6 +77,39 @@ def list(request, year=None, month=None):
     #     'objects': qs,
     # })
 
+def action_list(request):
+    form = ActionsForm(request.POST or None)
+    if request.method == "POST":
+        if form.is_valid():
+            mist = request.POST.get("mist", False)
+            drip = request.POST.get("drip", False)
+            fan = request.POST.get("fan", False)
+            light = request.POST.get("light", False)
+            heat = request.POST.get("heat", False)
+
+            msg = _activate(mist=mist, drip=drip, fan=fan, light=light, heat=heat)
+            if 'wrong' not in msg.lower():
+                messages.success(request, "Actions taken: " + msg)
+            else:
+                messages.error(request, "Actions tried: " + msg)
+
+    qs = models.Actions.objects.all().order_by('-date')  # filter(date=request.date
+    paginator = Paginator(qs, 30)
+    page = request.GET.get('page')
+    try:
+        table = paginator.page(page)
+    except PageNotAnInteger:
+        table = paginator.page(1)
+    except EmptyPage:
+        table = paginator.page(paginator.num_pages)
+
+    # Keep reference to page. Dirty trick. TODO: improve.
+    pp = table
+    # Convert current page into table.
+    table = ActionTable(table)
+
+    total = qs.count()
+    return render(request, 'orchid_app/action_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table})
 
 def _activate(**kwargs):
     '''Internal function. Control the actuators.
