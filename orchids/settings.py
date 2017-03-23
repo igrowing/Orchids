@@ -113,7 +113,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Jerusalem'
 
 USE_I18N = True
 
@@ -135,4 +135,5 @@ LOGOUT_REDIRECT_URL = '/'
 
 # SHORT_DATETIME_FORMAT = u'%Y-%m-%d %H:%M'
 SHORT_DATETIME_FORMAT = u'Y N j, H:i'
+DATETIME_FORMAT = u'Y N j, H:i'
 
