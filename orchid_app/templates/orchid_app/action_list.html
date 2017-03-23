@@ -6,7 +6,7 @@
 {% if messages %}
 <ul class="messages">
     {% for message in messages %}
-    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}> {{ message }} </li>
     {% endfor %}
 </ul>
 {% endif %}
@@ -24,9 +24,22 @@
   <label for="light"><input type="checkbox" name="actions" value="light" id="light"> Light</label><br>
   <label for="heat"><input type="checkbox" name="actions" value="heat" id="heat"> Heat</label><br>
 -->
-    {{ form.as_p }}
-
-    <input type="submit" value="Ready? Go!">
+    <table width="400">
+        <tr>
+            <td>
+                <h4>Status</h4>
+                {% for key, value in actuators.items %}
+                    <p><li>
+                        {{key}}: {{ value }}
+                    </li></p>
+                {% endfor %}
+            </td><td>
+            </td><td>
+            {{ form.as_p }}
+            <input type="submit" value="Ready? Go!">
+            </td>
+        </tr>
+    </table>
 </form>
 
 <hr>

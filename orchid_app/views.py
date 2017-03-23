@@ -10,6 +10,7 @@ from . import models
 
 import django_tables2 as tables
 import actuators
+import utils
 import sys
 
 
@@ -35,21 +36,28 @@ class ActionTable(tables.Table):
 
 
 # @login_required
-def list(request, year=None, month=None):
-    form = ActionsForm(request.POST or None)
+def list(request):
+    # Use auto_id for further form changes
+    form = ActionsForm(request.POST or None, auto_id=True)
+    a = _get_last_action()
     if request.method == "POST":
         if form.is_valid():
-            mist = request.POST.get("mist", False)
-            drip = request.POST.get("drip", False)
-            fan = request.POST.get("fan", False)
-            light = request.POST.get("light", False)
-            heat = request.POST.get("heat", False)
+            a.mist = request.POST.get("mist", False)
+            a.water = request.POST.get("water", False)
+            a.fan = request.POST.get("fan", False)
+            a.light = request.POST.get("light", False)
+            a.heat = request.POST.get("heat", False)
 
-            msg = _activate(mist=mist, drip=drip, fan=fan, light=light, heat=heat)
+            msg = _activate(mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
             if 'wrong' not in msg.lower():
                 messages.success(request, "Actions taken: " + msg)
             else:
                 messages.error(request, "Actions tried: " + msg)
+
+    for k, v in a.iteritems():
+        a[k] = _verb(v)
+
+    form.water = a.water
 
     qs = models.Sensors.objects.all().order_by('-date')  # filter(date=request.date
     paginator = Paginator(qs, 30)
@@ -65,36 +73,33 @@ def list(request, year=None, month=None):
     pp = table
     # Convert current page into table.
     table = SensorTable(table)
-
-    if year:
-        qs = qs.filter(date__year=year)
-    if month:
-        qs = qs.filter(date__month=month)
     total = qs.count()
-    return render(request, 'orchid_app/sensor_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table})
-    # , "expenses/expense_list.html", {
-    #     'year': year,
-    #     'month': month,
-    #     'total': total,
-    #     'objects': qs,
-    # })
+
+    return render(request, 'orchid_app/sensor_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a})
+
 
 def action_list(request):
     form = ActionsForm(request.POST or None)
+    a = _get_last_action()
     if request.method == "POST":
         if form.is_valid():
-            mist = request.POST.get("mist", False)
-            drip = request.POST.get("drip", False)
-            fan = request.POST.get("fan", False)
-            light = request.POST.get("light", False)
-            heat = request.POST.get("heat", False)
+            a.mist = request.POST.get("mist", False)
+            a.water = request.POST.get("water", False)
+            a.fan = request.POST.get("fan", False)
+            a.light = request.POST.get("light", False)
+            a.heat = request.POST.get("heat", False)
 
-            msg = _activate(mist=mist, drip=drip, fan=fan, light=light, heat=heat)
+            msg = _activate(mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
             if 'wrong' not in msg.lower():
                 messages.success(request, "Actions taken: " + msg)
             else:
                 messages.error(request, "Actions tried: " + msg)
 
+    # Standartize/verbose actuator form values.
+    for k, v in a.iteritems():
+        a[k] = _verb(v)
+
+    form.water = a.water
     qs = models.Actions.objects.all().order_by('-date')  # filter(date=request.date
     paginator = Paginator(qs, 30)
     page = request.GET.get('page')
@@ -111,7 +116,7 @@ def action_list(request):
     table = ActionTable(table)
 
     total = qs.count()
-    return render(request, 'orchid_app/action_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table})
+    return render(request, 'orchid_app/action_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a})
 
 def _activate(**kwargs):
     '''Internal function. Control the actuators.
@@ -163,3 +168,24 @@ def _activate(**kwargs):
 
     return ', '.join(msg)
 
+def _get_last_action():
+    res = utils.Dict()
+    a = {}
+    try:
+        # Use 'if-else' dirty trick to avoid exception in case of empty database.
+        a = models.Actions.objects.all().last()
+    except Exception as e:
+        sys.stderr.write('%s -- On start: %s (%s)' % (a, e.message, type(e)))
+
+    # Use 'if-else' dirty trick to avoid exception in case of empty database.
+    res.mist = _verb(getattr(a, 'mist', False))
+    res.water = _verb(a.water if a else False)
+    res.fan = a.fan if a else False
+    res.light = a.light if a else False
+    res.heat = a.heat if a else False
+
+    return res
+
+def _verb(b):
+    '''Convert boolean into verbal off/on.'''
+    return ['off', 'on'][b] if type(b) == bool else b

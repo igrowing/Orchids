@@ -5,7 +5,7 @@ from orchid_app import models
 
 
 class ActionsForm(forms.Form):
-    drip = forms.BooleanField(required=False)
+    water = forms.BooleanField(required=False)
     mist = forms.BooleanField(required=False)
     fan = forms.BooleanField(required=False)
     light = forms.BooleanField(required=False)
