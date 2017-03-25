@@ -25,7 +25,7 @@ class ActionTable(tables.Table):
     date = tables.DateTimeColumn(short=True)  # still doesn't work.
     class Meta:
         model = models.Actions
-        fields = ('date', 'water', 'mist', 'fan', 'light', 'heat')
+        fields = ('date', 'water', 'mist', 'fan', 'light', 'heat', 'reason')
 
 
 # @register.filter(name='myDate')
@@ -89,7 +89,7 @@ def action_list(request):
             a.light = request.POST.get("light", False)
             a.heat = request.POST.get("heat", False)
 
-            msg = _activate(mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
+            msg = _activate(reason='Manual', mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
             if 'wrong' not in msg.lower():
                 messages.success(request, "Actions taken: " + msg)
             else:
@@ -118,7 +118,7 @@ def action_list(request):
     total = qs.count()
     return render(request, 'orchid_app/action_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a})
 
-def _activate(**kwargs):
+def _activate(reason='unknown', **kwargs):
     '''Internal function. Control the actuators.
 
     @:param kwargs: actuator_name=required_state. Can be boolean or string (on, off, value).
@@ -131,6 +131,7 @@ def _activate(**kwargs):
     a = models.Actions()
     a.date = datetime.now()
     a.water = a.mist = a.fan = a.light = a.heat = False
+    a.reason = reason
 
     for k, v in kwargs.iteritems():
         if type(v) == unicode:
@@ -166,6 +167,7 @@ def _activate(**kwargs):
 
     sys.stdout.write('Action Records: ' + repr(models.Actions.objects.count()))
 
+    msg.append('reason: ' + reason)
     return ', '.join(msg)
 
 def _get_last_action():

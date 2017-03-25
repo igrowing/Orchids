@@ -41,13 +41,15 @@ class Actions(models.Model):
     heat = models.BooleanField(default=False)
     water = models.BooleanField(default=False)
     light = models.BooleanField(default=False)
+    reason = models.TextField(default='')
 
     def __str__(self):
-        return "[@{}] mist{} fan{} water{} heat{}".format(
+        return "[@{}] mist:{} fan:{} water:{} heat:{} reason:{}".format(
             self.date,
             self.mist,
             self.fan,
             self.water,
             self.heat,
+            self.reason,
         )
 
