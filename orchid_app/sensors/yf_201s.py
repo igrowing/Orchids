@@ -15,7 +15,8 @@ import subprocess as sp
 import paho.mqtt.publish as publish
 
 pin = 25
-TICKS_L = 450.0  # Keep decimal for parts of liters
+# YF-201s sensor is documented with 450 ticks/liter. Practical measure shows approx. 75 ticks/liter (div. by 6).
+TICKS_L = 450.0 / 6  # Keep decimal for parts of liters
 GPIO.setwarnings(False)  # Disable warnings
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -60,6 +61,6 @@ def run():
 # Use this trick to execute the file. Normally, it's a module to be imported.
 if __name__ == "__main__":
     print 'Subscribe to data with:'
-    print 'mosquitto_sub -t "#"'
+    print 'mosquitto_sub -v -t "#"'
     print 'Search for water :)'
     run()
