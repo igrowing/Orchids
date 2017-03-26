@@ -1,0 +1,17 @@
+###  BE CAREFUL while editing this file     ###
+###  Rename in to private.py, the edit it.  ###
+###
+###  DO NOT publish your private.py due to  ###
+###  security reasons.                      ###
+
+# Not recommended for change settings.
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+# Recommended for change settings.
+EMAIL_HOST = 'smtp.gmail.com'
+
+# Must change settings.
+EMAIL_HOST_USER = u'your_mail@gmail.com'
+EMAIL_HOST_PASSWORD = u'your_password'
+CONTACTS = [u'recipient1@mailserver1.com', u'recipient2@mailserver2.com']

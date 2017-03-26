@@ -11,7 +11,7 @@ import orchid_app.views as views
 from datetime import datetime
 from threading import Thread
 from decimal import Decimal
-
+import orchid_app.utils.sendmail as sendmail
 
 import time
 import os
@@ -131,6 +131,6 @@ def check_water_flow(liters):
     msg += '\nOpened valve closed. This may impact watering and/or temperature conditions.\nTake actions immediately.'
 
     # Send emergency mail
-    #eval(open(PRIVATE_DATA_FILE).read())
+    sendmail.sendmail('Orchid farm emergency: water leakage detected', msg)
     # Send emergency IM
 
