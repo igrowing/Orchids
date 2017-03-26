@@ -60,7 +60,7 @@ class Command(BaseCommand):
         views._activate(reason='System startup', mist=False, drip=False, fan=False, light=False, heat=False)
 
         # Keep preliminary data for averaging
-        data = {'wind': [], 'water': [], 't_amb': [], 't_obj': [], 'hpa': [], 'rh': [], 'lux': []}
+        data = {'wind': [], 'water': 0.0, 't_amb': [], 't_obj': [], 'hpa': [], 'rh': [], 'lux': []}
         ts = time.time()
 
         while True:
@@ -70,8 +70,9 @@ class Command(BaseCommand):
                     topic = "shm/orchid/wind/last_min"
                     data['wind'].append(float(subscribe.simple(topic, keepalive=65, will={'topic': topic, 'payload': 0.0}).payload))
                     topic = "shm/orchid/water/last_min"
-                    data['water'].append(float(subscribe.simple(topic, keepalive=65, will={'topic': topic, 'payload': 0.0}).payload))
-                    check_water_flow(data['water'][-1])
+                    last_water = float(subscribe.simple(topic, keepalive=65, will={'topic': topic, 'payload': 0.0}).payload)
+                    check_water_flow(last_water)
+                    data['water'] += last_water
                     # Read i2c sensors
                     a, b, c = bme.readBME280All()
                     data['t_amb'].append(a)
@@ -89,7 +90,7 @@ class Command(BaseCommand):
                 # Data conditioning by model/DB requirements
                 s.t_amb = Decimal('{:.1f}'.format(avg(data['t_amb'])))
                 s.t_obj = Decimal('{:.1f}'.format(avg(data['t_obj'])))
-                s.water = Decimal('{:.1f}'.format(avg(data['water'])))
+                s.water = Decimal('{:.1f}'.format(data['water']))
                 s.wind = Decimal('{:.1f}'.format(avg(data['wind'])))
                 s.hpa = Decimal('{:.1f}'.format(avg(data['hpa'])))
                 s.rh = int(avg(data['rh']))
@@ -103,7 +104,7 @@ class Command(BaseCommand):
                     self.stderr.write('On write: %s (%s)' % (e.message, type(e)))
                     time.sleep(60)  # Wait 1 minute before retry.
                 # Reset the data structure
-                data = {'wind': [], 'water': [], 't_amb': [], 't_obj': [], 'hpa': [], 'rh': [], 'lux': []}
+                data = {'wind': [], 'water': 0.0, 't_amb': [], 't_obj': [], 'hpa': [], 'rh': [], 'lux': []}
                 ts = time.time()
 
             # Example of catch bad data
