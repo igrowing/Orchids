@@ -7,9 +7,12 @@ import orchid_app.sensors.yf_201s as water
 import orchid_app.sensors.mlx90614 as mlx
 import orchid_app.sensors.bme280 as bme
 import paho.mqtt.subscribe as subscribe
+import orchid_app.views as views
 from datetime import datetime
 from threading import Thread
 from decimal import Decimal
+
+
 import time
 import os
 
@@ -18,43 +21,12 @@ from django.utils.six import python_2_unicode_compatible
 from django.db import transaction
 from django.conf import settings
 
-#from orchid_app import models
 from orchid_app.models import Sensors
 from orchid_app.models import Actions
 
 POLL_PERIOD = 600  # seconds = 10 minutes
 POLL_PERIOD_MIN = POLL_PERIOD / 60  # minutes
-
-def on_start(self):
-    '''Shut down everything could be open.'''
-    import orchid_app.actuators.latching_valves as valves
-    import orchid_app.actuators.valve as relays
-
-    rep = []
-    a = Actions()
-    a.date = datetime.now()
-    try:
-        valves.LatchingValve(1).set_status(0)
-        rep.append('LatchingValve:water(1)')
-        a.water = False
-        valves.LatchingValve(2).set_status(0)
-        rep.append('LatchingValve:mist(2)')
-        a.mist = False
-        relays.Relay(1).set_status(0)
-        rep.append('Relay:fan(1)')
-        a.fan = False
-        relays.Relay(2).set_status(0)
-        rep.append('Relay:light(2)')
-        a.light = False
-
-        os.system('logger orchid_runner: shut off all actuators: ' + ', '.join(rep))
-        a.save()
-    except Exception as e:
-        os.system('logger orchid_runner: failed to shut off all actuators. OK with: ' + ', '.join(rep))
-        self.stderr.write('On start: %s (%s)' % (e.message, type(e)))
-
-    self.stdout.write('Shut off all actuators: ' + ', '.join(rep))
-    self.stdout.write('Action Records: ' + repr(Actions.objects.count()))
+MAX_FLOW_RATE = 2.0  # L/minute.  This is threshold for emergency water leakage detection. If more than the threshold then close the valves.
 
 
 def avg(l):
@@ -84,8 +56,10 @@ class Command(BaseCommand):
             t.start()
 
         os.system('logger orchid_runner has started')
-        on_start(self)
+        # Shut down on system start/restart everything could be open.
+        views._activate(reason='System startup', mist=False, drip=False, fan=False, light=False, heat=False)
 
+        # Keep preliminary data for averaging
         data = {'wind': [], 'water': [], 't_amb': [], 't_obj': [], 'hpa': [], 'rh': [], 'lux': []}
         ts = time.time()
 
@@ -97,6 +71,7 @@ class Command(BaseCommand):
                     data['wind'].append(float(subscribe.simple(topic, keepalive=65, will={'topic': topic, 'payload': 0.0}).payload))
                     topic = "shm/orchid/water/last_min"
                     data['water'].append(float(subscribe.simple(topic, keepalive=65, will={'topic': topic, 'payload': 0.0}).payload))
+                    check_water_flow(data['water'][-1])
                     # Read i2c sensors
                     a, b, c = bme.readBME280All()
                     data['t_amb'].append(a)
@@ -137,4 +112,25 @@ class Command(BaseCommand):
             # except Poll.DoesNotExist:
             #     raise CommandError('Poll "%s" does not exist' % poll_id)
             # self.stdout.write(self.style.SUCCESS('Successfully closed poll "%s"' % poll_id))
+
+def check_water_flow(liters):
+    if liters < MAX_FLOW_RATE:
+        return
+
+    # Take emergency actions
+    # Find out which valve is open
+    la = views._get_last_action()
+    # Try to shut open valve off
+    views._activate(reason='Emergency shut off', mist=False if la.mist else True, drip=False if la.water else True,
+                    fan=la.fan, light=la.light, heat=la.heat)
+
+    # Build emergency message
+    msg = 'Water leakage is detected in circuit(s): '
+    msg += 'drip ' if la.water else ''
+    msg += 'mist' if la.mist else ''
+    msg += '\nOpened valve closed. This may impact watering and/or temperature conditions.\nTake actions immediately.'
+
+    # Send emergency mail
+    #eval(open(PRIVATE_DATA_FILE).read())
+    # Send emergency IM
 

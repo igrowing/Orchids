@@ -48,7 +48,7 @@ def list(request):
             a.light = request.POST.get("light", False)
             a.heat = request.POST.get("heat", False)
 
-            msg = _activate(mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
+            msg = _activate(reason='Manual', mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
             if 'wrong' not in msg.lower():
                 messages.success(request, "Actions taken: " + msg)
             else:
