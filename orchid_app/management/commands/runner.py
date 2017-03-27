@@ -12,6 +12,7 @@ from datetime import datetime
 from threading import Thread
 from decimal import Decimal
 import orchid_app.utils.sendmail as sendmail
+import orchid_app.utils.pushb as pushb
 
 import time
 import os
@@ -130,8 +131,9 @@ def check_water_flow(liters):
     msg += 'drip ' if la.water else ''
     msg += 'mist' if la.mist else ''
     msg += '\nOpened valve closed. This may impact watering and/or temperature conditions.\nTake actions immediately.'
+    subj = 'Orchid farm emergency: water leakage detected'
 
     # Send emergency mail
-    sendmail.sendmail('Orchid farm emergency: water leakage detected', msg)
+    sendmail.sendmail(subj, msg)
     # Send emergency IM
-
+    pushb.send_note(subj, msg)

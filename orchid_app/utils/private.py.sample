@@ -15,3 +15,6 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = u'your_mail@gmail.com'
 EMAIL_HOST_PASSWORD = u'your_password'
 CONTACTS = [u'recipient1@mailserver1.com', u'recipient2@mailserver2.com']
+
+# Must change is Pushbullet notifications needed.
+PUSHBULLET_API_KEY = "get from https://www.pushbullet.com/#settings/account"
