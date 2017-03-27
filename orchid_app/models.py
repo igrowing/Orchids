@@ -44,12 +44,16 @@ class Actions(models.Model):
     reason = models.TextField(default='')
 
     def __str__(self):
-        return "[@{}] mist:{} fan:{} water:{} heat:{} reason:{}".format(
+        return "[@{}] mist:{} fan:{} water:{} light:{} heat:{} reason:{}".format(
             self.date,
             self.mist,
             self.fan,
             self.water,
+            self.light,
             self.heat,
             self.reason,
         )
+
+    def equals(self, action):
+        return self.mist == action.mist and self.water == action.water and self.fan == action.fan and self.light == action.light and self.heat == action.heat
 

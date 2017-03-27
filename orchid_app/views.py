@@ -49,7 +49,7 @@ def list(request):
             a.heat = request.POST.get("heat", False)
 
             msg = _activate(reason='Manual', mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
-            if 'wrong' not in msg.lower():
+            if [i for i in ['wrong', 'skip'] if i not in msg.lower()]:
                 messages.success(request, "Actions taken: " + msg)
             else:
                 messages.error(request, "Actions tried: " + msg)
@@ -90,7 +90,7 @@ def action_list(request):
             a.heat = request.POST.get("heat", False)
 
             msg = _activate(reason='Manual', mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
-            if 'wrong' not in msg.lower():
+            if [i for i in ['wrong', 'skip'] if i not in msg.lower()]:
                 messages.success(request, "Actions taken: " + msg)
             else:
                 messages.error(request, "Actions tried: " + msg)
@@ -133,6 +133,8 @@ def _activate(reason='unknown', **kwargs):
     a.water = a.mist = a.fan = a.light = a.heat = False
     a.reason = reason
 
+    la = _get_last_action()
+
     for k, v in kwargs.iteritems():
         if type(v) == unicode:
             if v.lower() in ['on', 'true', 'enable', 'start']:
@@ -143,16 +145,20 @@ def _activate(reason='unknown', **kwargs):
 
         msg.append(k + ': ' + str(v))
         if k == 'mist':
-            actuators.LatchingValve(1).set_status(v)
+            if la.mist != v:
+                actuators.LatchingValve(1).set_status(v)
             a.mist = v
         elif k == 'drip':
-            actuators.LatchingValve(2).set_status(v)
+            if la.water != v:
+                actuators.LatchingValve(2).set_status(v)
             a.water = v
         elif k == 'fan':
-            actuators.Relay(1).set_status(v)
+            if la.fan != v:
+                actuators.Relay(1).set_status(v)
             a.fan = v
         elif k == 'light':
-            actuators.Relay(2).set_status(v)
+            if la.light != v:
+                actuators.Relay(2).set_status(v)
             a.light = v
         elif k == 'heat':
             # Do something :)
@@ -160,15 +166,17 @@ def _activate(reason='unknown', **kwargs):
         else:
             msg[-1] += "<<--Wrong action!"
 
-    try:
-        a.save()
-    except Exception as e:
-        sys.stderr.write('On start: %s (%s)' % (e.message, type(e)))
-
-    sys.stdout.write('Action Records: ' + repr(models.Actions.objects.count()))
+    if not a.equals(la):
+        try:
+            a.save()
+        except Exception as e:
+            sys.stderr.write('On start: %s (%s)' % (e.message, type(e)))
+    else:
+        msg.append('No changes. Skip action')
 
     msg.append('reason: ' + reason)
     return ', '.join(msg)
+
 
 def _get_last_action():
     res = utils.Dict()
@@ -180,8 +188,8 @@ def _get_last_action():
         sys.stderr.write('%s -- On start: %s (%s)' % (a, e.message, type(e)))
 
     # Use 'if-else' dirty trick to avoid exception in case of empty database.
-    res.mist = _verb(getattr(a, 'mist', False))
-    res.water = _verb(a.water if a else False)
+    res.mist = getattr(a, 'mist', False)
+    res.water = a.water if a else False
     res.fan = a.fan if a else False
     res.light = a.light if a else False
     res.heat = a.heat if a else False
