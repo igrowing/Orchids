@@ -7,4 +7,6 @@
 #
 sleep 30
 killall ssh
-service restartd restart
+killall keepalive_ssh.sh
+nohup /home/pi/Orchids/keepalive_ssh.sh &
+sudo service restartd stop  # get rid of restartd ASAP.
