@@ -1,7 +1,6 @@
 #!/bin/bash
 COUNTER=0  # for SSH tunnel
 COUNT_W=0  # for HTTP tunnel
-FILE=/dev/shm/keep_ssh
 
 while true; do
   # sleep 1 minute
@@ -19,13 +18,12 @@ while true; do
     nohup ssh -fN -R 198.57.47.238:10080:localhost:8001 orchid@198.57.47.238 &
     let COUNT_W=0
   fi
-  # check file, increment counter if file is missing
-  if ! test -e $FILE ; then
+  # check if reverse SSH is able to communicate (bring hostname from orchid farm)
+  resp=`runuser -l pi -c 'ssh root@198.57.47.238 "timeout 30 ssh -p 10022 pi@localhost hostname"'`
+  if ! [[ "$resp" =~ "orchid" ]] ; then
     let COUNTER+=1
   fi
-  # remove file
-  rm -f $FILE
-  # If 3 minutes no file appears then restart all ssh and the counter
+  # If 3 minutes there is not SSH communication then restart all ssh and the counter
   if [  $COUNTER -gt 2 ]; then
     PID=`ps -ef | grep ssh | grep 10022 | awk '{ print $2 }'`
     logger Exceeded timeout of non-responsive SSH for more than $COUNTER minutes. Killing old pid: $PID. Restarting SSH reverse tunnel.
