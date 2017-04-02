@@ -58,7 +58,7 @@ class Command(BaseCommand):
 
         os.system('logger orchid_runner has started')
         # Shut down on system start/restart everything could be open.
-        views._activate(reason='System startup', mist=False, drip=False, fan=False, light=False, heat=False)
+        views._activate(reason='System startup', force=True, mist=False, drip=False, fan=False, light=False, heat=False)
 
         # Keep preliminary data for averaging
         data = {'wind': [], 'water': 0.0, 't_amb': [], 't_obj': [], 'hpa': [], 'rh': [], 'lux': []}
@@ -123,7 +123,7 @@ def check_water_flow(liters):
     # Find out which valve is open
     la = views._get_last_action()
     # Try to shut open valve off
-    views._activate(reason='Emergency shut off', mist=False if la.mist else True, drip=False if la.water else True,
+    views._activate(reason='Emergency shut off', force=True, mist=False if la.mist else True, drip=False if la.water else True,
                     fan=la.fan, light=la.light, heat=la.heat)
 
     # Build emergency message

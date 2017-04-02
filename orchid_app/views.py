@@ -118,7 +118,7 @@ def action_list(request):
     total = qs.count()
     return render(request, 'orchid_app/action_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a})
 
-def _activate(reason='unknown', **kwargs):
+def _activate(reason='unknown', force=False, **kwargs):
     '''Internal function. Control the actuators.
 
     @:param kwargs: actuator_name=required_state. Can be boolean or string (on, off, value).
@@ -166,7 +166,7 @@ def _activate(reason='unknown', **kwargs):
         else:
             msg[-1] += "<<--Wrong action!"
 
-    if not a.equals(la):
+    if not a.equals(la) or force:
         try:
             a.save()
         except Exception as e:
