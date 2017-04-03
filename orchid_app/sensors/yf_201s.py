@@ -16,7 +16,7 @@ import paho.mqtt.publish as publish
 
 pin = 25
 # YF-201s sensor is documented with 450 ticks/liter. Practical measure shows approx. 75 ticks/liter (div. by 6).
-TICKS_L = 450.0 / 6  # Keep decimal for parts of liters
+TICKS_L = 450.0 / 7.8  # Keep decimal for parts of liters
 GPIO.setwarnings(False)  # Disable warnings
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)

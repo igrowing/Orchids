@@ -115,6 +115,7 @@ class Command(BaseCommand):
             #     raise CommandError('Poll "%s" does not exist' % poll_id)
             # self.stdout.write(self.style.SUCCESS('Successfully closed poll "%s"' % poll_id))
 
+
 def check_water_flow(liters):
     if liters < MAX_FLOW_RATE:
         return
