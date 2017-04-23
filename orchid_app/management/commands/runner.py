@@ -28,7 +28,9 @@ from orchid_app.models import Actions
 POLL_PERIOD = 600  # seconds = 10 minutes
 POLL_PERIOD_MIN = POLL_PERIOD / 60  # minutes
 MAX_FLOW_RATE = 2.0  # L/minute.  This is threshold for emergency water leakage detection. If more than the threshold then close the valves.
-
+MAX_LEAK_RATE = 0.005
+MAX_SEND_COUNT = POLL_PERIOD / 10  # Send leakage message once in hour
+send_counter = 0
 
 def avg(l):
     '''Convert values of list from str to float if needed. Return average of the collected values.'''
@@ -117,23 +119,45 @@ class Command(BaseCommand):
 
 
 def check_water_flow(liters):
-    if liters < MAX_FLOW_RATE:
-        return
-
     # Take emergency actions
     # Find out which valve is open
     la = views._get_last_action()
-    # Try to shut open valve off
-    views._activate(reason='Emergency shut off', force=True, mist=False if la.mist else True, drip=False if la.water else True,
-                    fan=la.fan, light=la.light, heat=la.heat)
+    if la.mist or la.water:
+        if liters > MAX_FLOW_RATE:
+            # Try to shut open valve off
+            views._activate(reason='Emergency shut off', force=True, mist=False, drip=False,
+                            fan=la.fan, light=la.light, heat=la.heat)
 
-    # Build emergency message
-    msg = 'Water leakage is detected in circuit(s): '
-    msg += 'drip ' if la.water else ''
-    msg += 'mist' if la.mist else ''
-    msg += '\nOpened valve closed. This may impact watering and/or temperature conditions.\nTake actions immediately.'
-    subj = 'Orchid farm emergency: water leakage detected'
+            # Build emergency message
+            msg = 'Water leakage is detected in circuit(s): '
+            msg += 'drip ' if la.water else ''
+            msg += 'mist' if la.mist else ''
+            msg += '\nOpened valve closed. This may impact watering and/or temperature conditions.\nTake actions immediately.'
+            subj = 'Orchid farm emergency: water leakage detected'
+            send_message(subj, msg)
 
+    # Check leakage when all valves closed
+    elif liters > MAX_LEAK_RATE:
+        global send_counter
+        if send_counter == 0:
+            # Try to shut open valve off
+            views._activate(reason='Emergency shut off', force=True, mist=False, drip=False,
+                            fan=la.fan, light=la.light, heat=la.heat)
+
+            # Build emergency message
+            msg = 'Water leakage is detected while all valves should be closed.'
+            msg += '\nTried to close all valves. This may impact watering and/or temperature conditions.\nTake actions immediately.'
+            subj = 'Orchid farm emergency: water leakage detected'
+            send_message(subj, msg)
+            send_counter += 1
+        else:
+            if send_counter < MAX_SEND_COUNT:
+                send_counter += 1
+            else:
+                send_counter = 0
+
+
+def send_message(subj, msg):
     # Send emergency mail
     sendmail.sendmail(subj, msg)
     # Send emergency IM
