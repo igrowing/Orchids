@@ -1,32 +1,23 @@
 #!/usr/bin/env python
 from __future__ import unicode_literals
 
-import orchid_app.sensors.anemometer as anemometer
-import orchid_app.sensors.max44009 as light
-import orchid_app.sensors.yf_201s as water
-import orchid_app.sensors.mlx90614 as mlx
-import orchid_app.sensors.bme280 as bme
-import orchid_app.models as models
-import paho.mqtt.subscribe as subscribe
-import orchid_app.views as views
-from collections import defaultdict
-from datetime import timedelta
-from datetime import datetime
-from threading import Thread
-from decimal import Decimal
-import orchid_app.utils.sendmail as sendmail
-import orchid_app.utils.pushb as pushb
-
-import time
 import os
+import time
+from datetime import datetime
+from decimal import Decimal
+from threading import Thread
 
-from django.core.management.base import BaseCommand, CommandError
-from django.utils.six import python_2_unicode_compatible
-from django.db import transaction
-from django.conf import settings
+import paho.mqtt.subscribe as subscribe
+from django.core.management.base import BaseCommand
 
+import orchid_app.controller
+import orchid_app.sensors.anemometer as anemometer
+import orchid_app.sensors.bme280 as bme
+import orchid_app.sensors.max44009 as light
+import orchid_app.sensors.mlx90614 as mlx
+import orchid_app.sensors.yf_201s as water
+from orchid_app.controller import get_current_state, send_message
 from orchid_app.models import Sensors
-from orchid_app.models import Actions
 
 POLL_PERIOD = 600  # seconds = 10 minutes
 POLL_PERIOD_MIN = POLL_PERIOD / 60  # minutes
@@ -63,7 +54,7 @@ class Command(BaseCommand):
 
         os.system('logger orchid_runner has started')
         # Shut down on system start/restart everything could be open.
-        views._activate(reason='System startup', force=True, mist=False, drip=False, fan=False, light=False, heat=False)
+        orchid_app.controller.activate(reason='System startup', force=True, mist=False, drip=False, fan=False, light=False, heat=False)
 
         # Keep preliminary data for averaging
         data = {'wind': [], 'water': 0.0, 't_amb': [], 't_obj': [], 'hpa': [], 'rh': [], 'lux': []}
@@ -124,60 +115,15 @@ class Command(BaseCommand):
             # self.stdout.write(self.style.SUCCESS('Successfully closed poll "%s"' % poll_id))
 
 
-def get_current_state():
-    '''Calculate averages for all possible states. Choose the most appropriate state.'''
-
-    # Define tuples: lower temperature, time back for averaging.
-    # Example: (6, 24)  means for temperatures of average 6deg.C and up use averaging of 24 hours.
-    # 0.2 hours = 12 minutes, i.e. only last record is taken. This is set for emergency states (coldest and hottest).
-    avg_preset = (  # Topmost tuple has top priority
-        (36, 0.2),
-        (28, 6),
-        (17, 12),
-        (6, 24),
-        (0, 0.2),
-    )
-
-    # Check last status separately: it indicates on one of emergency states.
-    status = calc_avg(avg_preset[-1][1])
-    if status['t_amb'] >= avg_preset[-1][0]:
-        return status  # TODO: consider string status return
-
-    for t in avg_preset[-1]:
-        status = calc_avg(t[1])
-        if status['t_amb'] >= t[0]:
-            return status  # TODO: consider string status return
-
-    # TODO: define return value if nothing fits the preset temperatures (should not be thus)
-
-
-def calc_avg(duration):
-
-    # Acquire relevant range of the data from the DB.
-    ml = models.Sensors.objects.filter(date__gte=datetime.now() - timedelta(hours=duration)).values('wind', 'hpa', 't_amb', 't_obj', 'rh', 'lux')
-    ed = defaultdict(int)  # Allow automatic adding of key is the key is not present in the dict.
-
-    # Sum all values for each parameter.
-    for d in ml:
-        for k, v in d.iteritems():
-            ed[k] += v
-
-    # Calc the avg
-    for k, v in ed.iteritems():
-        ed[k] = ed[k] / ml.count()
-
-    return ed
-
-
 def check_water_flow(liters):
     # Take emergency actions
     # Find out which valve is open
-    la = views._get_last_action()
+    la = orchid_app.controller.get_last_action()
     if la.mist or la.water:
         if liters > MAX_FLOW_RATE:
             # Try to shut open valve off
-            views._activate(reason='Emergency shut off', force=True, mist=False, drip=False,
-                            fan=la.fan, light=la.light, heat=la.heat)
+            orchid_app.controller.activate(reason='Emergency shut off', force=True, mist=False, drip=False,
+                                           fan=la.fan, light=la.light, heat=la.heat)
 
             # Build emergency message
             msg = 'Water leakage is detected in circuit(s): '
@@ -192,8 +138,8 @@ def check_water_flow(liters):
         global send_counter
         if send_counter == 0:
             # Try to shut open valve off
-            views._activate(reason='Emergency shut off', force=True, mist=False, drip=False,
-                            fan=la.fan, light=la.light, heat=la.heat)
+            orchid_app.controller.activate(reason='Emergency shut off', force=True, mist=False, drip=False,
+                                           fan=la.fan, light=la.light, heat=la.heat)
 
             # Build emergency message
             msg = 'Water leakage is detected while all valves should be closed.'
@@ -208,8 +154,3 @@ def check_water_flow(liters):
                 send_counter = 0
 
 
-def send_message(subj, msg):
-    # Send emergency mail
-    sendmail.sendmail(subj, msg)
-    # Send emergency IM
-    pushb.send_note(subj, msg)
