@@ -6,8 +6,11 @@ import orchid_app.sensors.max44009 as light
 import orchid_app.sensors.yf_201s as water
 import orchid_app.sensors.mlx90614 as mlx
 import orchid_app.sensors.bme280 as bme
+import orchid_app.models as models
 import paho.mqtt.subscribe as subscribe
 import orchid_app.views as views
+from collections import defaultdict
+from datetime import timedelta
 from datetime import datetime
 from threading import Thread
 from decimal import Decimal
@@ -110,12 +113,60 @@ class Command(BaseCommand):
                 data = {'wind': [], 'water': 0.0, 't_amb': [], 't_obj': [], 'hpa': [], 'rh': [], 'lux': []}
                 ts = time.time()
 
+                # Calculate current state
+                cs = get_current_state()
+
             # Example of catch bad data
             # try:
             #     poll = Poll.objects.get(pk=poll_id)
             # except Poll.DoesNotExist:
             #     raise CommandError('Poll "%s" does not exist' % poll_id)
             # self.stdout.write(self.style.SUCCESS('Successfully closed poll "%s"' % poll_id))
+
+
+def get_current_state():
+    '''Calculate averages for all possible states. Choose the most appropriate state.'''
+
+    # Define tuples: lower temperature, time back for averaging.
+    # Example: (6, 24)  means for temperatures of average 6deg.C and up use averaging of 24 hours.
+    # 0.2 hours = 12 minutes, i.e. only last record is taken. This is set for emergency states (coldest and hottest).
+    avg_preset = (  # Topmost tuple has top priority
+        (36, 0.2),
+        (28, 6),
+        (17, 12),
+        (6, 24),
+        (0, 0.2),
+    )
+
+    # Check last status separately: it indicates on one of emergency states.
+    status = calc_avg(avg_preset[-1][1])
+    if status['t_amb'] >= avg_preset[-1][0]:
+        return status  # TODO: consider string status return
+
+    for t in avg_preset[-1]:
+        status = calc_avg(t[1])
+        if status['t_amb'] >= t[0]:
+            return status  # TODO: consider string status return
+
+    # TODO: define return value if nothing fits the preset temperatures (should not be thus)
+
+
+def calc_avg(duration):
+
+    # Acquire relevant range of the data from the DB.
+    ml = models.Sensors.objects.filter(date__gte=datetime.now() - timedelta(hours=duration)).values('wind', 'hpa', 't_amb', 't_obj', 'rh', 'lux')
+    ed = defaultdict(int)  # Allow automatic adding of key is the key is not present in the dict.
+
+    # Sum all values for each parameter.
+    for d in ml:
+        for k, v in d.iteritems():
+            ed[k] += v
+
+    # Calc the avg
+    for k, v in ed.iteritems():
+        ed[k] = ed[k] / ml.count()
+
+    return ed
 
 
 def check_water_flow(liters):
