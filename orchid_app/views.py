@@ -1,11 +1,11 @@
 import django_tables2 as tables
 from django.contrib import messages
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.shortcuts import render
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
-from forms import ActionsForm
-from orchid_app.controller import activate, get_last_action
 from . import models
+from forms import ActionsForm
+import orchid_app.controller as controller
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -36,7 +36,7 @@ class ActionTable(tables.Table):
 def list(request):
     # Use auto_id for further form changes
     form = ActionsForm(request.POST or None, auto_id=True)
-    a = get_last_action()
+    a = controller.get_last_action()
     if request.method == "POST":
         if form.is_valid():
             a.mist = request.POST.get("mist", False)
@@ -45,7 +45,7 @@ def list(request):
             a.light = request.POST.get("light", False)
             a.heat = request.POST.get("heat", False)
 
-            msg = activate(reason='Manual', mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
+            msg = controller.activate(reason='Manual', mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
             if [i for i in ['wrong', 'skip'] if i not in msg.lower()]:
                 messages.success(request, "Actions taken: " + msg)
             else:
@@ -72,16 +72,16 @@ def list(request):
     table = SensorTable(table)
     total = qs.count()
 
-    # TODO: Fill correct status list.
-    statuses = [False for i in range(17)]
-    statuses[5] = True
+    statuses = [False for i in range(len(controller.state_list))]
+    _, i = controller.get_current_state()
+    statuses[i] = True
 
     return render(request, 'orchid_app/sensor_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a, 'statuses': statuses})
 
 
 def action_list(request):
     form = ActionsForm(request.POST or None)
-    a = get_last_action()
+    a = controller.get_last_action()
     if request.method == "POST":
         if form.is_valid():
             a.mist = request.POST.get("mist", False)
@@ -90,7 +90,7 @@ def action_list(request):
             a.light = request.POST.get("light", False)
             a.heat = request.POST.get("heat", False)
 
-            msg = activate(reason='Manual', mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
+            msg = controller.activate(reason='Manual', mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
             if [i for i in ['wrong', 'skip'] if i not in msg.lower()]:
                 messages.success(request, "Actions taken: " + msg)
             else:
@@ -118,9 +118,9 @@ def action_list(request):
 
     total = qs.count()
 
-    # TODO: Fill correct status list.
-    statuses = [False for i in range(17)]
-    statuses[6] = True
+    statuses = [False for i in range(len(controller.state_list))]
+    _, i = controller.get_current_state()
+    statuses[i] = True
 
     return render(request, 'orchid_app/action_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a, 'statuses': statuses})
 
