@@ -4,20 +4,23 @@ from __future__ import unicode_literals
 import os
 import time
 from datetime import datetime
-from decimal import Decimal
 from threading import Thread
+from decimal import Decimal
 
 import paho.mqtt.subscribe as subscribe
 from django.core.management.base import BaseCommand
 
-import orchid_app.controller
 import orchid_app.sensors.anemometer as anemometer
-import orchid_app.sensors.bme280 as bme
 import orchid_app.sensors.max44009 as light
-import orchid_app.sensors.mlx90614 as mlx
 import orchid_app.sensors.yf_201s as water
-from orchid_app.controller import get_current_state, send_message
+import orchid_app.sensors.mlx90614 as mlx
+import orchid_app.sensors.bme280 as bme
+
+import orchid_app.controller as controller
 from orchid_app.models import Sensors
+
+import warnings
+warnings.filterwarnings('ignore')
 
 POLL_PERIOD = 600  # seconds = 10 minutes
 POLL_PERIOD_MIN = POLL_PERIOD / 60  # minutes
@@ -54,7 +57,7 @@ class Command(BaseCommand):
 
         os.system('logger orchid_runner has started')
         # Shut down on system start/restart everything could be open.
-        orchid_app.controller.activate(reason='System startup', force=True, mist=False, drip=False, fan=False, light=False, heat=False)
+        controller.activate(reason='System startup', force=True, mist=False, drip=False, fan=False, light=False, heat=False)
 
         # Keep preliminary data for averaging
         data = {'wind': [], 'water': 0.0, 't_amb': [], 't_obj': [], 'hpa': [], 'rh': [], 'lux': []}
@@ -105,7 +108,7 @@ class Command(BaseCommand):
                 ts = time.time()
 
                 # Calculate current state
-                cs = get_current_state()
+                cs = controller.get_current_state()
 
             # Example of catch bad data
             # try:
@@ -118,12 +121,12 @@ class Command(BaseCommand):
 def check_water_flow(liters):
     # Take emergency actions
     # Find out which valve is open
-    la = orchid_app.controller.get_last_action()
+    la = controller.get_last_action()
     if la.mist or la.water:
         if liters > MAX_FLOW_RATE:
             # Try to shut open valve off
-            orchid_app.controller.activate(reason='Emergency shut off', force=True, mist=False, drip=False,
-                                           fan=la.fan, light=la.light, heat=la.heat)
+            controller.activate(reason='Emergency shut off', force=True, mist=False, drip=False,
+                                fan=la.fan, light=la.light, heat=la.heat)
 
             # Build emergency message
             msg = 'Water leakage is detected in circuit(s): '
@@ -131,26 +134,25 @@ def check_water_flow(liters):
             msg += 'mist' if la.mist else ''
             msg += '\nOpened valve closed. This may impact watering and/or temperature conditions.\nTake actions immediately.'
             subj = 'Orchid farm emergency: water leakage detected'
-            send_message(subj, msg)
+            controller.send_message(subj, msg)
 
     # Check leakage when all valves closed
     elif liters > MAX_LEAK_RATE:
         global send_counter
         if send_counter == 0:
             # Try to shut open valve off
-            orchid_app.controller.activate(reason='Emergency shut off', force=True, mist=False, drip=False,
-                                           fan=la.fan, light=la.light, heat=la.heat)
+            controller.activate(reason='Emergency shut off', force=True, mist=False, drip=False,
+                                fan=la.fan, light=la.light, heat=la.heat)
 
             # Build emergency message
             msg = 'Water leakage is detected while all valves should be closed.'
             msg += '\nTried to close all valves. This may impact watering and/or temperature conditions.\nTake actions immediately.'
             subj = 'Orchid farm emergency: water leakage detected'
-            send_message(subj, msg)
+            controller.send_message(subj, msg)
             send_counter += 1
         else:
             if send_counter < MAX_SEND_COUNT:
                 send_counter += 1
             else:
                 send_counter = 0
-
 

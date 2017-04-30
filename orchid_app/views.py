@@ -7,6 +7,9 @@ from forms import ActionsForm
 from orchid_app.controller import activate, get_last_action
 from . import models
 
+import warnings
+warnings.filterwarnings('ignore')
+
 
 class SensorTable(tables.Table):
     date = tables.DateTimeColumn(short=True)  # still doesn't work.
@@ -69,7 +72,11 @@ def list(request):
     table = SensorTable(table)
     total = qs.count()
 
-    return render(request, 'orchid_app/sensor_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a})
+    # TODO: Fill correct status list.
+    statuses = [False for i in range(17)]
+    statuses[5] = True
+
+    return render(request, 'orchid_app/sensor_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a, 'statuses': statuses})
 
 
 def action_list(request):
@@ -110,7 +117,12 @@ def action_list(request):
     table = ActionTable(table)
 
     total = qs.count()
-    return render(request, 'orchid_app/action_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a})
+
+    # TODO: Fill correct status list.
+    statuses = [False for i in range(17)]
+    statuses[6] = True
+
+    return render(request, 'orchid_app/action_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a, 'statuses': statuses})
 
 
 def _verb(b):

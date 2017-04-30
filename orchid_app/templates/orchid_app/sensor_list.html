@@ -201,36 +201,27 @@
 				<td class="xl704027">~</td>
 				<td class="xl704027">~</td>
 				<td class="xl704027">0</td>
-				<td class="xl704027">&gt;5</td>
+				<td class="xl704027">&ge;5</td>
 				<td class="xl704027">0</td>
-				<td class="xl704027">&gt;5</td>
+				<td class="xl704027">&ge;5</td>
 				<td class="xl704027">0</td>
-				<td class="xl704027">&gt;5</td>
+				<td class="xl704027">&ge;5</td>
 				<td class="xl704027">0</td>
-				<td class="xl704027">&gt;5</td>
+				<td class="xl704027">&ge;5</td>
 				<td class="xl704027">0</td>
-				<td class="xl704027">&gt;5</td>
+				<td class="xl704027">&ge;5</td>
 				<td class="xl704027">~</td>
 			</tr>
 			<tr>
 				<td class="xl654027" height="21" style='background:#B8CCE4;mso-pattern:#B8CCE4 none'>Detected</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
-				<td class="xl704027">&nbsp;</td>
+                {% for value in statuses %}
+                    {% if value %}
+                        <td class="xl704027" style='background:#FFEB84;'> &#10004;
+                    {% else %}
+                        <td class="xl704027"> &nbsp;
+                    {% endif %}
+                    </td>
+                {% endfor %}
 			</tr>
 		</table>
 	</div>
