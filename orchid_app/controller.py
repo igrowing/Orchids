@@ -231,7 +231,7 @@ def calc_avg(duration):
     ed['duration'] = duration
 
     # Return empty dictionary if no records found (new database).
-    if ml.count == 0:
+    if ml.count() == 0:
         return ed
 
     # Sum all values for each parameter.
