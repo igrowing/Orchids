@@ -25,7 +25,7 @@ warnings.filterwarnings('ignore')
 POLL_PERIOD = 600  # seconds = 10 minutes
 POLL_PERIOD_MIN = POLL_PERIOD / 60  # minutes
 MAX_FLOW_RATE = 2.0  # L/minute.  This is threshold for emergency water leakage detection. If more than the threshold then close the valves.
-MAX_LEAK_RATE = 0.005
+MAX_LEAK_RATE = 0.008
 MAX_SEND_COUNT = POLL_PERIOD / 10  # Send leakage message once in hour
 send_counter = 0
 
@@ -108,7 +108,7 @@ class Command(BaseCommand):
                 ts = time.time()
 
                 # Calculate current state
-                cs = controller.get_current_state()
+                controller.read_current_state()
 
             # Example of catch bad data
             # try:

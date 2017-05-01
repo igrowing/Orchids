@@ -73,7 +73,7 @@ def list(request):
     total = qs.count()
 
     statuses = [False for i in range(len(controller.state_list))]
-    _, i = controller.get_current_state()
+    i = controller.get_current_state()[1]
     statuses[i] = True
 
     return render(request, 'orchid_app/sensor_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a, 'statuses': statuses})
@@ -119,7 +119,7 @@ def action_list(request):
     total = qs.count()
 
     statuses = [False for i in range(len(controller.state_list))]
-    _, i = controller.get_current_state()
+    i = controller.get_current_state()[1]
     statuses[i] = True
 
     return render(request, 'orchid_app/action_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a, 'statuses': statuses})

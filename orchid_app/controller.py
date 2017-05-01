@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from orchid_app import actuators, utils, models
 from orchid_app.utils import sendmail as sendmail, pushb
 
+MIN_AVG_HOURS = 0.4  # TODO: reconsider the value
+
 # state_name = {'action_name': [off_period_min, on_period_min, exclusion], ...}
 #emergency_low = {'water': [20130, 30], 'mist': [,], 'vent': [,], 'ac': [,], 'heat': [,], 'shade': [,], 'fertilize': [,]}
 act_dict = {
@@ -29,7 +31,7 @@ act_dict = {
 }
 
 state_list = [
-    {'name': 't0h0w0', 'avg': 0.3,  # Don't average, emergency state.
+    {'name': 't0h0w0', 'avg': MIN_AVG_HOURS,  # Don't average, emergency state.
      'criteria': {'tmin': 0, 'tmax': 6, 'hmin': 0, 'hmax': 100, 'wmin': 0, 'wmax': 100},
      'action': {'heat': [60, 0]}},
     {'name': 't6h0w0', 'avg': 24,
@@ -77,11 +79,13 @@ state_list = [
     {'name': 't28h80w5', 'avg': 6,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
-    {'name': 't36h0w0', 'avg': 0.3,  # Don't average, emergency state.
+    {'name': 't36h0w0', 'avg': MIN_AVG_HOURS,  # Don't average, emergency state.
      'criteria': {'tmin': 36, 'tmax': 100, 'hmin': 0, 'hmax': 100, 'wmin': 0, 'wmax': 100},
      'action': {'mist': [30, 30, 'vent'], 'vent': [30, 30, 'mist'], 'ac': [60, 0], 'shade': [400, 0]}}, # When t_amb > 36 or t_obj > 25
 ]
 
+# Global variable to minimize page loading time.
+current_state = []
 
 class State(object):
     # Class variables
@@ -194,10 +198,16 @@ def get_last_action():
 
 
 def get_current_state():
+    if not current_state:
+        read_current_state()
+    return current_state
+
+
+def read_current_state():
     '''Calculate averages for all possible states. Choose the most appropriate state.
     Return status as full record of state_list and its index.'''
 
-    status = calc_avg(0.3)
+    status = calc_avg(MIN_AVG_HOURS)
 
     for i in range(len(state_list)):
         duration = state_list[i]['avg']
@@ -208,7 +218,9 @@ def get_current_state():
 
         cr = state_list[i]['criteria']
         if cr['tmin'] <= status['t_amb'] < cr['tmax'] and cr['hmin'] <= status['rh'] < cr['hmax'] and cr['wmin'] <= status['wind'] < cr['wmax']:
-            return state_list[i], i
+            global current_state
+            current_state = (state_list[i], i)
+            break
 
 
 def calc_avg(duration):
