@@ -24,7 +24,7 @@ warnings.filterwarnings('ignore')
 
 POLL_PERIOD = 600  # seconds = 10 minutes
 POLL_PERIOD_MIN = POLL_PERIOD / 60  # minutes
-MAX_FLOW_RATE = 2.0  # L/minute.  This is threshold for emergency water leakage detection. If more than the threshold then close the valves.
+MAX_FLOW_RATE = 2.5  # L/minute.  This is threshold for emergency water leakage detection. If more than the threshold then close the valves.
 MAX_LEAK_RATE = 0.008
 MAX_SEND_COUNT = POLL_PERIOD / 10  # Send leakage message once in hour
 send_counter = 0
@@ -54,6 +54,8 @@ class Command(BaseCommand):
         for t in threads:
             t.setDaemon(True)
             t.start()
+
+        # TODO: Add here init for activators threads.
 
         os.system('logger orchid_runner has started')
         # Shut down on system start/restart everything could be open.
