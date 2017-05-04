@@ -59,7 +59,7 @@ class Actions(models.Model):
         )
 
     def equals(self, action):
-        return self.mist == action.mist and self.water == action.water and self.fan == action.fan and self.light == action.light and self.heat == action.heat
+        return self.get_all_fields() == action
 
     def get_all_fields(self, exclude=('id', 'date', 'reason')):
         return get_all_fields(self, exclude=exclude)
@@ -67,7 +67,9 @@ class Actions(models.Model):
 
 def get_all_fields(obj, exclude=[]):
     '''Returns a Dict of all field names and values.
-    Exclude non-meaningful fields.'''
+    Exclude non-meaningful fields.
+
+    Inspired by shaker: stackoverflow.com/a/2226150/1472042'''
 
     fields = utils.Dict()
     # Correct user input for exclude parameter
