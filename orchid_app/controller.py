@@ -1,5 +1,7 @@
 import re
 import sys
+import time
+from django.core import exceptions
 from collections import defaultdict
 from datetime import datetime, timedelta
 
@@ -17,18 +19,30 @@ act_dict = {
     't6h80w0': {'water': [15, 20145]},  # Water for 15 min in 2 weeks.
     't17h0w0': {'water': [30, 10230], 'mist': [60, 2820]},  # Water for 30 min in 1 week. Mist for 1 hour every 2 days.
     't17h40w0': {'water': [30, 10230]},  # Water for 30 min in 1 week.
-    't25h0w0': {'water': [30, 10230], 'mist': [30, 1410, 'vent'], 'vent': [60, 1380, 'mist']},  # Water for 30 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with vent for 1 hour.
+    't25h0w0': {'water': [30, 10230], 'mix': {'mist': 30, 'vent': 60, 'off': 1350}},  # Water for 30 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with vent for 1 hour.
     't25h0w5': {'water': [30, 10230], 'mist': [30, 1410]},  # Water for 30 min in 1 week. Mist for 30 minutes every day.
-    't25h40w0': {'water': [30, 10230], 'mist': [5, 1435, 'vent'], 'vent': [60, 1380, 'mist']},  # Water for 30 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with vent for 1 hour.
+    't25h40w0': {'water': [30, 10230], 'mix': {'mist': 5, 'vent': 60, 'off': 1375}},  # Water for 30 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with vent for 1 hour.
     't25h40w5': {'water': [30, 10230], 'mist': [5, 1435]},  # Water for 30 min in 1 week. Mist for 5 minutes every day.
     't25h80w0': {'water': [30, 10230], 'vent': [60, 1380]},  # Water for 30 min in 1 week. Vent for 1 hour at the most light and no wind.
     't25h80w5': {'water': [30, 10230]},  # Water for 30 min in 1 week.
-    't28h0w0': {'water': [30, 10230], 'mist': [30, 90, 'vent'], 'vent': [60, 60, 'mist']},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with vent for 1 hour.
+    't28h0w0': {'water': [30, 10230], 'mix': {'mist': 30, 'vent': 60, 'off': 30}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with vent for 1 hour.
     't28h0w5': {'water': [30, 10230], 'mist': [30, 90]},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light.
     't28h80w0': {'water': [30, 10230], 'vent': [30, 90]},  # Water for 30 min in 1 week. Vent for 30 minutes at the most light and no wind.
     't28h80w5': {'water': [30, 10230]},  # Water for 30 min in 1 week.
-    't36h0w0': {'mist': [30, 30, 'vent'], 'vent': [30, 30, 'mist'], 'ac': [60, 0], 'shade': [400, 0]}, # When t_amb > 36 or t_obj > 25
+    't36h0w0': {'mix': {'mist': 30, 'vent': 30}, 'ac': [60, 0], 'shade': [400, 0]}, # When t_amb > 36 or t_obj > 25
 }
+
+# Primitive action description:
+# 'water', dripping watering. can be on/off.
+# 'mist',  water mist. can be on/off.
+# 'fan',   Fan/ventilation. can be on/off.
+# 'heat',  heater (separated power supply!). can be on/off.
+# 'ac',    Air conditioner. can be on/off. TBD: add sophisticated control.
+# 'shade', Rolling or twisting shade. can be on/off.
+# 'light', Lamps or other lighting. can be on/off.
+# 'off',   Shut off everything.
+PRIM_ACTIONS = ['water', 'mist', 'fan', 'heat', 'light']  # 'mix' is not in primitive actions. Mix must be parsed separately.
+#PRIM_ACTIONS = ['water', 'mist', 'fan', 'heat', 'ac', 'shade', 'light', 'off']  # 'mix' is not in primitive actions. Mix must be parsed separately.
 
 state_list = [
     {'name': 't0h0w0', 'avg': MIN_AVG_HOURS,  # Don't average, emergency state.
@@ -51,73 +65,41 @@ state_list = [
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
     {'name': 't25h0w0', 'avg': 12,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 0, 'wmax': 5},
-     'action': {'water': [30, 10230], 'mist': [30, 1410, 'vent'], 'vent': [60, 1380, 'mist']}},  # Water for 30 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with vent for 1 hour.
+     'action': {'water': [30, 10230], 'mix': {'mist': 30, 'fan': 60, 'off': 1350}}},  # Water for 30 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with fan for 1 hour.
     {'name': 't25h0w5', 'avg': 12,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230], 'mist': [30, 1410]}},  # Water for 30 min in 1 week. Mist for 30 minutes every day.
     {'name': 't25h40w0', 'avg': 12,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 0, 'wmax': 5},
-     'action': {'water': [30, 10230], 'mist': [5, 1435, 'vent'], 'vent': [60, 1380, 'mist']}},  # Water for 30 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with vent for 1 hour.
+     'action': {'water': [30, 10230], 'mix': {'mist': 5, 'vent': 60, 'off': 1375}}},  # Water for 30 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with fan for 1 hour.
     {'name': 't25h40w5', 'avg': 12,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230], 'mist': [5, 1435]}},  # Water for 30 min in 1 week. Mist for 5 minutes every day.
     {'name': 't25h80w0', 'avg': 12,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100, 'wmin': 0, 'wmax': 5},
-     'action': {'water': [30, 10230], 'vent': [60, 1380]}},  # Water for 30 min in 1 week. Vent for 1 hour at the most light and no wind.
+     'action': {'water': [30, 10230], 'fan': [60, 1380]}},  # Water for 30 min in 1 week. fan for 1 hour at the most light and no wind.
     {'name': 't25h80w5', 'avg': 12,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
     {'name': 't28h0w0', 'avg': 6,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 0, 'wmax': 5},
-     'action': {'water': [30, 10230], 'mist': [30, 90, 'vent'], 'vent': [60, 60, 'mist']}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with vent for 1 hour.
+     'action': {'water': [30, 10230], 'mix': {'mist': 30, 'fan': 60, 'off': 30}}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with fan for 1 hour.
     {'name': 't28h0w5', 'avg': 6,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230], 'mist': [30, 90]}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light.
     {'name': 't28h80w0', 'avg': 6,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100, 'wmin': 0, 'wmax': 5},
-     'action': {'water': [30, 10230], 'vent': [30, 90]}},  # Water for 30 min in 1 week. Vent for 30 minutes at the most light and no wind.
+     'action': {'water': [30, 10230], 'fan': [30, 90]}},  # Water for 30 min in 1 week. fan for 30 minutes at the most light and no wind.
     {'name': 't28h80w5', 'avg': 6,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
     {'name': 't36h0w0', 'avg': MIN_AVG_HOURS,  # Don't average, emergency state.
      'criteria': {'tmin': 36, 'tmax': 100, 'hmin': 0, 'hmax': 100, 'wmin': 0, 'wmax': 100},
-     'action': {'mist': [30, 30, 'vent'], 'vent': [30, 30, 'mist'], 'ac': [60, 0], 'shade': [400, 0]}}, # When t_amb > 36 or t_obj > 25
+     'action': {'mix': {'mist': 30, 'fan': 30}, 'ac': [60, 0], 'shade': [400, 0]}},  # When t_amb > 36 or t_obj > 25
 ]
 
 # Global variable to minimize page loading time.
 current_state = []
-
-class State(object):
-    # Class variables
-    t = h = w = 0           # Temperature, humidity, wind are state definition.
-    enter_datetime = None   # When the state was entered last time.
-    action_datetime = None  # When action in this state was taken last time.
-    action_dict = None
-
-    def __init__(self, t, h, w, action_dict):
-        self.t = t
-        self.h = h
-        self.w = w
-        self.action_dict = action_dict
-
-    def __str__(self):
-        return 't{}h{}w{}: {}'.format(self.t, self.h, self.w, self.action_dict)
-
-    def __repr__(self):
-        return self.__str__()
-
-    # Class functions
-    def enter(self):
-        self.enter_datetime = datetime.now()
-
-    def is_valid(self, t, h, w, next_state=None):
-        '''Returns True when t, h, w are greater than this state definition and less than next state provided.
-        If no state provided then no maximum value checked.'''
-
-        if next_state:
-            return self.t <= t <= next_state.t and self.h <= h <= next_state.h and self.w <= w <= next_state.w
-        else:
-            return self.t <= t and self.h <= h and self.w <= w
 
 
 def activate(reason='unknown', force=False, **kwargs):
@@ -130,7 +112,6 @@ def activate(reason='unknown', force=False, **kwargs):
     msg = []
     a = models.Actions()
     a.date = datetime.now()
-    a.water = a.mist = a.fan = a.light = a.heat = False
     a.reason = reason
 
     la = get_last_action()
@@ -148,7 +129,7 @@ def activate(reason='unknown', force=False, **kwargs):
             if la.mist != v:
                 actuators.LatchingValve(1).set_status(v)
             a.mist = v
-        elif k == 'drip':
+        elif k == 'drip' or k == 'water':  # Backward compatibility :(
             if la.water != v:
                 actuators.LatchingValve(2).set_status(v)
             a.water = v
@@ -179,22 +160,15 @@ def activate(reason='unknown', force=False, **kwargs):
 
 
 def get_last_action():
-    res = utils.Dict()
     a = {}
     try:
-        # Use 'if-else' dirty trick to avoid exception in case of empty database.
+        # Avoid exception in case of empty database.
         a = models.Actions.objects.all().last()
-    except Exception as e:
+    except Exception as e:  # TODO: Narrowise the catch, it's too wide...
         sys.stderr.write('%s -- On start: %s (%s)' % (a, e.message, type(e)))
+        return a
 
-    # Use 'if-else' dirty trick to avoid exception in case of empty database.
-    res.mist = getattr(a, 'mist', False)
-    res.water = a.water if a else False
-    res.fan = a.fan if a else False
-    res.light = a.light if a else False
-    res.heat = a.heat if a else False
-
-    return res
+    return a.get_all_fields()
 
 
 def get_current_state():
@@ -244,6 +218,72 @@ def calc_avg(duration):
         ed[k] = ed[k] / ml.count()
 
     return ed
+
+
+def act_current_state():
+    '''Run this function in a thread. Do not join! It's never ending.
+    Actuator is eligible to turn on if:
+    - currently it is off AND
+    - passed enough time being off.
+    Actuator is eligible to turn off if:
+    - currently it is on AND
+    - passed enough time being on.
+    I.e. check eligibility of actuator to change state.
+    '''
+    # while True:
+    ts = time.time()
+    la = get_last_action()          # Read actuators current status.
+    state = get_current_state()[0]  # Take dictionary only. Index doesn't matter.
+    act_name = state['name']
+    #state['criteria']
+    ad = state['action']
+
+    # Check if time gone per every single required action in given state
+    for action, params in ad.iteritems():
+        print "Enter simple action"
+        if action in PRIM_ACTIONS:
+            eligible_change = get_last_change_minutes(action, la[action]) > params[not la[action]]
+            print "Need change", action, eligible_change
+            if eligible_change:
+                la[action] = not la[action]
+        elif action == 'mix':  # mix action.
+            print "Enter mix action"
+            pass
+        else:  # Skip non-implemented actuators
+            print "Enter non-supported action"
+            pass
+
+    print "Action", la
+        # activate(reason='Automate for state: %s' % act_name, **la)
+        # # Sleep rest of time till end of minute
+        # time.sleep(60 - (time.time() - ts))
+
+
+def get_last_change_minutes(actuator, is_on):
+    '''Return 'minutes' how long time ago the requested actuator was set in required state.
+    Different approach of search comes from nature of the DB: after single "on" it can be number of "off".
+    Return -1 if no such field in the DB.
+    Return 0 if looking for 'off' state and actuator is currently "on".'''
+
+    # Find last record with True value
+    filt = {'%s' % actuator: True}
+    try:  # Return -1 if no such field in the DB.
+        qs = models.Actions.objects.filter(**filt).last()
+    except exceptions.FieldError:
+        return -1
+
+    if is_on:
+        diff = (datetime.utcnow() - qs.date.replace(tzinfo=None))
+        return (diff.days * 86400 + diff.seconds) / 60.0
+    else:
+        filt = {'%s__%s' % ('date', 'gt'): qs.date, '%s' % actuator: False}
+        qs1 = models.Actions.objects.filter(**filt).first()
+        # If no records then actuator is on now.
+        if not qs1:  # TODO: can throw here. Revise.
+            return 0
+
+        diff = (datetime.utcnow() - qs1.date.replace(tzinfo=None))
+        return (diff.days * 86400 + diff.seconds) / 60.0
 
 
 def send_message(subj, msg):
