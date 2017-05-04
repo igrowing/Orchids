@@ -5,10 +5,13 @@ from django.core import exceptions
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-from orchid_app import actuators, utils, models
-from orchid_app.utils import sendmail as sendmail, pushb
+from orchid_app import actuators, models
+from orchid_app.utils import sendmail, pushb
 
 MIN_AVG_HOURS = 0.4  # TODO: reconsider the value
+
+# Global variable to minimize page loading time.
+current_state = []
 
 # state_name = {'action_name': [off_period_min, on_period_min, exclusion], ...}
 #emergency_low = {'water': [20130, 30], 'mist': [,], 'vent': [,], 'ac': [,], 'heat': [,], 'shade': [,], 'fertilize': [,]}
@@ -97,9 +100,6 @@ state_list = [
      'criteria': {'tmin': 36, 'tmax': 100, 'hmin': 0, 'hmax': 100, 'wmin': 0, 'wmax': 100},
      'action': {'mix': {'mist': 30, 'fan': 30}, 'ac': [60, 0], 'shade': [400, 0]}},  # When t_amb > 36 or t_obj > 25
 ]
-
-# Global variable to minimize page loading time.
-current_state = []
 
 
 def activate(reason='unknown', force=False, **kwargs):
@@ -234,12 +234,10 @@ def act_current_state():
     ts = time.time()
     la = get_last_action()          # Read actuators current status.
     state = get_current_state()[0]  # Take dictionary only. Index doesn't matter.
-    act_name = state['name']
-    #state['criteria']
-    ad = state['action']
+    act_name = state['name']        # Keep name for reporting.
 
     # Check if time gone per every single required action in given state
-    for action, params in ad.iteritems():
+    for action, params in state['action'].iteritems():
         print "Enter simple action"
         if action in PRIM_ACTIONS:
             eligible_change = get_last_change_minutes(action, la[action]) > params[not la[action]]
@@ -273,8 +271,7 @@ def get_last_change_minutes(actuator, is_on):
         return -1
 
     if is_on:
-        diff = (datetime.utcnow() - qs.date.replace(tzinfo=None))
-        return (diff.days * 86400 + diff.seconds) / 60.0
+        return _diff_datetime_mins(datetime.utcnow(), qs.date.replace(tzinfo=None))
     else:
         filt = {'%s__%s' % ('date', 'gt'): qs.date, '%s' % actuator: False}
         qs1 = models.Actions.objects.filter(**filt).first()
@@ -282,8 +279,16 @@ def get_last_change_minutes(actuator, is_on):
         if not qs1:  # TODO: can throw here. Revise.
             return 0
 
-        diff = (datetime.utcnow() - qs1.date.replace(tzinfo=None))
-        return (diff.days * 86400 + diff.seconds) / 60.0
+        return _diff_datetime_mins(datetime.utcnow(), qs1.date.replace(tzinfo=None))
+
+
+def _diff_datetime_mins(t1, t2):
+    '''Calculate difference in minutes between datetime objects t1 and t2.
+    t1 is considered to be greater (now).
+    Both objects must be in the same timezone (UTC).'''
+
+    diff = t1 - t2
+    return (diff.days * 86400 + diff.seconds) / 60.0
 
 
 def send_message(subj, msg):
