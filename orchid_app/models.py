@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.conf import settings
 from django.utils.six import python_2_unicode_compatible
 
+from orchid_app import utils
 
 @python_2_unicode_compatible
 class Sensors(models.Model):
@@ -32,6 +33,9 @@ class Sensors(models.Model):
             self.wind,
         )
 
+    def get_all_fields(self, exclude=('id', 'date')):
+        return get_all_fields(self, exclude=exclude)
+
 
 @python_2_unicode_compatible
 class Actions(models.Model):
@@ -56,4 +60,32 @@ class Actions(models.Model):
 
     def equals(self, action):
         return self.mist == action.mist and self.water == action.water and self.fan == action.fan and self.light == action.light and self.heat == action.heat
+
+    def get_all_fields(self, exclude=('id', 'date', 'reason')):
+        return get_all_fields(self, exclude=exclude)
+
+
+def get_all_fields(obj, exclude=[]):
+    '''Returns a Dict of all field names and values.
+    Exclude non-meaningful fields.'''
+
+    fields = utils.Dict()
+    # Correct user input for exclude parameter
+    if not exclude:
+        exclude = []
+
+    for f in obj._meta.fields:
+        fname = f.name
+        # get value of the field
+        try:
+            value = getattr(obj, fname)
+        except AttributeError:  # maybe use: obj.DoesNotExist ?
+            value = None
+
+        # only display fields with values and skip some fields entirely
+        if f.editable and fname not in exclude:
+            fields[fname] = value
+
+    return fields
+
 
