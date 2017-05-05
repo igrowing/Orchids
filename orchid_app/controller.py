@@ -46,10 +46,11 @@ act_dict = {
 # 'off',   Shut off everything.
 PRIM_ACTIONS = ['water', 'mist', 'fan', 'heat', 'light']  # 'mix' is not in primitive actions. Mix must be parsed separately.
 #PRIM_ACTIONS = ['water', 'mist', 'fan', 'heat', 'ac', 'shade', 'light', 'off']  # 'mix' is not in primitive actions. Mix must be parsed separately.
+MIX_ORDER = ['mist', 'fan', 'off']  # Define action priority in mix.
 
 state_list = [
     {'name': 't0h0w0', 'avg': MIN_AVG_HOURS,  # Don't average, emergency state.
-     'criteria': {'tmin': 0, 'tmax': 6, 'hmin': 0, 'hmax': 100, 'wmin': 0, 'wmax': 100},
+     'criteria': {'tmin': 0, 'tmax': 6, 'hmin': 0, 'hmax': 100.1, 'wmin': 0, 'wmax': 100},
      'action': {'heat': [60, 0]}},
     {'name': 't6h0w0', 'avg': 24,
      'criteria': {'tmin': 6, 'tmax': 17, 'hmin': 0, 'hmax': 40, 'wmin': 0, 'wmax': 100},
@@ -58,13 +59,13 @@ state_list = [
      'criteria': {'tmin': 6, 'tmax': 17, 'hmin': 40, 'hmax': 80, 'wmin': 0, 'wmax': 100},
      'action': {'water': [30, 20130]}},  # Water for 30 min in 2 weeks.
     {'name': 't6h80w0', 'avg': 24,
-     'criteria': {'tmin': 6, 'tmax': 17, 'hmin': 80, 'hmax': 100, 'wmin': 0, 'wmax': 100},
+     'criteria': {'tmin': 6, 'tmax': 17, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 100},
      'action': {'water': [15, 20145]}},  # Water for 15 min in 2 weeks.
     {'name': 't17h0w0', 'avg': 12,
      'criteria': {'tmin': 17, 'tmax': 25, 'hmin': 0, 'hmax': 40, 'wmin': 0, 'wmax': 100},
      'action': {'water': [30, 10230], 'mist': [60, 2820]}},  # Water for 30 min in 1 week. Mist for 1 hour every 2 days.
     {'name': 't17h40w0', 'avg': 12,
-     'criteria': {'tmin': 17, 'tmax': 25, 'hmin': 40, 'hmax': 100, 'wmin': 0, 'wmax': 100},
+     'criteria': {'tmin': 17, 'tmax': 25, 'hmin': 40, 'hmax': 100.1, 'wmin': 0, 'wmax': 100},
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
     {'name': 't25h0w0', 'avg': 12,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 0, 'wmax': 5},
@@ -74,15 +75,15 @@ state_list = [
      'action': {'water': [30, 10230], 'mist': [30, 1410]}},  # Water for 30 min in 1 week. Mist for 30 minutes every day.
     {'name': 't25h40w0', 'avg': 12,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 0, 'wmax': 5},
-     'action': {'water': [30, 10230], 'mix': {'mist': 5, 'vent': 60, 'off': 1375}}},  # Water for 30 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with fan for 1 hour.
+     'action': {'water': [30, 10230], 'mix': {'mist': 5, 'fan': 60, 'off': 1375}}},  # Water for 30 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with fan for 1 hour.
     {'name': 't25h40w5', 'avg': 12,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230], 'mist': [5, 1435]}},  # Water for 30 min in 1 week. Mist for 5 minutes every day.
     {'name': 't25h80w0', 'avg': 12,
-     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100, 'wmin': 0, 'wmax': 5},
+     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 5},
      'action': {'water': [30, 10230], 'fan': [60, 1380]}},  # Water for 30 min in 1 week. fan for 1 hour at the most light and no wind.
     {'name': 't25h80w5', 'avg': 12,
-     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100, 'wmin': 5, 'wmax': 100},
+     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100.1, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
     {'name': 't28h0w0', 'avg': 6,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 0, 'wmax': 5},
@@ -91,13 +92,13 @@ state_list = [
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230], 'mist': [30, 90]}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light.
     {'name': 't28h80w0', 'avg': 6,
-     'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100, 'wmin': 0, 'wmax': 5},
+     'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 5},
      'action': {'water': [30, 10230], 'fan': [30, 90]}},  # Water for 30 min in 1 week. fan for 30 minutes at the most light and no wind.
     {'name': 't28h80w5', 'avg': 6,
-     'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100, 'wmin': 5, 'wmax': 100},
+     'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100.1, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
     {'name': 't36h0w0', 'avg': MIN_AVG_HOURS,  # Don't average, emergency state.
-     'criteria': {'tmin': 36, 'tmax': 100, 'hmin': 0, 'hmax': 100, 'wmin': 0, 'wmax': 100},
+     'criteria': {'tmin': 36, 'tmax': 100, 'hmin': 0, 'hmax': 100.1, 'wmin': 0, 'wmax': 100},
      'action': {'mix': {'mist': 30, 'fan': 30}, 'ac': [60, 0], 'shade': [400, 0]}},  # When t_amb > 36 or t_obj > 25
 ]
 
@@ -182,6 +183,7 @@ def read_current_state():
     Return status as full record of state_list and its index.
     '''
 
+    # Read first the status with minimal averaging to catch emergency state (lowest and highest temperatures).
     status = calc_avg(MIN_AVG_HOURS)
 
     for i in range(len(state_list)):
@@ -247,20 +249,27 @@ def _run_state_action():
     la = get_last_action()          # Read actuators current status.
     state = get_current_state()[0]  # Take dictionary only. Index doesn't matter.
     act_name = state['name']        # Keep name for reporting.
+    actions = state['action']
 
+    print state
+    print actions
     # Check if time gone per every single required action in given state
-    for action, params in state['action'].iteritems():
-        print "Enter simple action"
+    for action, params in actions.iteritems():
         if action in PRIM_ACTIONS:
+            print "Enter simple action", action
             eligible_change = get_last_change_minutes(action, la[action]) > params[not la[action]]
             print "Need change", action, eligible_change
             if eligible_change:
                 la[action] = not la[action]
         elif action == 'mix':  # mix action.
-            print "Enter mix action"
+            print params
+            qaz = ''
+            for k, v in params.iteritems():
+                qaz += '%s: %s, ' % (k, v)
+            print "Enter mix action:", qaz
             pass
         else:  # Skip non-implemented actuators
-            print "Enter non-supported action"
+            print "Enter non-supported action", action
             pass
 
     print "Action", la
