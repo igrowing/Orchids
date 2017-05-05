@@ -103,7 +103,7 @@ state_list = [
 
 
 def activate(reason='unknown', force=False, **kwargs):
-    '''Internal function. Control the actuators.
+    '''Control the actuators.
 
     @:param kwargs: actuator_name=required_state. Can be boolean or string (on, off, value).
     @:returns string: message what was activated and deactivated.
@@ -179,7 +179,8 @@ def get_current_state():
 
 def read_current_state():
     '''Calculate averages for all possible states. Choose the most appropriate state.
-    Return status as full record of state_list and its index.'''
+    Return status as full record of state_list and its index.
+    '''
 
     status = calc_avg(MIN_AVG_HOURS)
 
@@ -222,6 +223,18 @@ def calc_avg(duration):
 
 def act_current_state():
     '''Run this function in a thread. Do not join! It's never ending.
+    This function just calls really working function in a loop.
+    '''
+
+    while True:
+        ts = time.time()
+        _run_state_action()
+        # Sleep rest of time till end of minute
+        time.sleep(60 - (time.time() - ts))
+
+
+def _run_state_action():
+    '''Set actuators in appropriate position, which defined by current state.
     Actuator is eligible to turn on if:
     - currently it is off AND
     - passed enough time being off.
@@ -230,8 +243,7 @@ def act_current_state():
     - passed enough time being on.
     I.e. check eligibility of actuator to change state.
     '''
-    # while True:
-    ts = time.time()
+
     la = get_last_action()          # Read actuators current status.
     state = get_current_state()[0]  # Take dictionary only. Index doesn't matter.
     act_name = state['name']        # Keep name for reporting.
@@ -252,16 +264,15 @@ def act_current_state():
             pass
 
     print "Action", la
-        # activate(reason='Automate for state: %s' % act_name, **la)
-        # # Sleep rest of time till end of minute
-        # time.sleep(60 - (time.time() - ts))
+    # activate(reason='Automate for state: %s' % act_name, **la)
 
 
 def get_last_change_minutes(actuator, is_on):
     '''Return 'minutes' how long time ago the requested actuator was set in required state.
     Different approach of search comes from nature of the DB: after single "on" it can be number of "off".
     Return -1 if no such field in the DB.
-    Return 0 if looking for 'off' state and actuator is currently "on".'''
+    Return 0 if looking for 'off' state and actuator is currently "on".
+    '''
 
     # Find last record with True value
     filt = {'%s' % actuator: True}
@@ -285,7 +296,8 @@ def get_last_change_minutes(actuator, is_on):
 def _diff_datetime_mins(t1, t2):
     '''Calculate difference in minutes between datetime objects t1 and t2.
     t1 is considered to be greater (now).
-    Both objects must be in the same timezone (UTC).'''
+    Both objects must be in the same timezone (UTC).
+    '''
 
     diff = t1 - t2
     return (diff.days * 86400 + diff.seconds) / 60.0
