@@ -9,7 +9,8 @@ from datetime import datetime, timedelta
 from orchid_app import actuators, models
 from orchid_app.utils import sendmail, pushb
 
-MIN_AVG_HOURS = 0.4  # TODO: reconsider the value
+MIN_AVG_HOURS = 0.4   # TODO: reconsider the value
+MAX_TIMEOUT = 999999  # Very long time indicated no action was found
 
 # Global variable to minimize page loading time.
 current_state = []
@@ -166,6 +167,9 @@ def activate(reason='unknown', force=False, **kwargs):
 
 
 def get_last_action():
+    '''
+    :return: Dictionary of statuses of all actuators. Does not contain non-actuator data (ID, date, reason)
+    '''
     a = {}
     try:
         # Avoid exception in case of empty database.
@@ -203,6 +207,8 @@ def read_current_state():
             global current_state
             current_state = (state_list[i], i)
             break
+
+    sys.stdout.write('Read status: %s' % repr(current_state))
 
 
 def calc_avg(duration):
@@ -281,7 +287,9 @@ def _run_state_action():
         else:  # Skip non-implemented actuators
             pass
 
-    print "Action", la, na
+    print "Action", la
+    sys.stdout.write('Set automatic action for state %s: %s' % (act_name, repr(la)))
+    sys.stdout.flush()
     # activate(reason='Automate for state: %s' % act_name, **la)
 
 
@@ -308,21 +316,29 @@ def get_last_change_minutes(actuator, is_on):
     Return 0 if looking for 'off' state and actuator is currently "on".
     '''
 
-    # Find last record with True value
-    filt = {'%s' % actuator: True}
+    # Find last record with True value AND generated automatically
+    filt = {'%s' % actuator: True, 'reason__icontains': 'automate'}
     try:  # Return -1 if no such field in the DB.
         qs = models.Actions.objects.filter(**filt).last()
     except exceptions.FieldError:
         return -1
 
+    if not qs:
+        return MAX_TIMEOUT
+
     if is_on:
         return _diff_datetime_mins(datetime.utcnow(), qs.date.replace(tzinfo=None))
     else:
-        filt = {'%s__%s' % ('date', 'gt'): qs.date, '%s' % actuator: False}
+        # Find last record with False value AFTER True value AND generated automatically
+        filt = {'%s__%s' % ('date', 'gt'): qs.date, '%s' % actuator: False, 'reason__icontains': 'automate'}
         qs1 = models.Actions.objects.filter(**filt).first()
         # If no records then actuator is on now.
-        if not qs1:  # TODO: can throw here. Revise.
-            return 0
+        if not qs1:
+            la = get_last_action()
+            if la and la[actuator]:
+                return 0
+            else:
+                return MAX_TIMEOUT
 
         return _diff_datetime_mins(datetime.utcnow(), qs1.date.replace(tzinfo=None))
 
