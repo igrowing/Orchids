@@ -1,6 +1,7 @@
 import re
 import sys
 import time
+import copy
 from django.core import exceptions
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -43,10 +44,14 @@ act_dict = {
 # 'ac',    Air conditioner. can be on/off. TBD: add sophisticated control.
 # 'shade', Rolling or twisting shade. can be on/off.
 # 'light', Lamps or other lighting. can be on/off.
-# 'off',   Shut off everything.
 PRIM_ACTIONS = ['water', 'mist', 'fan', 'heat', 'light']  # 'mix' is not in primitive actions. Mix must be parsed separately.
-#PRIM_ACTIONS = ['water', 'mist', 'fan', 'heat', 'ac', 'shade', 'light', 'off']  # 'mix' is not in primitive actions. Mix must be parsed separately.
-MIX_ORDER = ['mist', 'fan', 'off']  # Define action priority in mix.
+#PRIM_ACTIONS = ['water', 'mist', 'fan', 'heat', 'ac', 'shade', 'light']
+# Mix actions define just order of activity, i.e. priority. The structure is the same [on_time, off_time].
+# Example: 'mix': {'mist': [5, 40], 'fan': [10, 35]}
+# means: Turn mist on for 5 minutes, then turn mist off anf turn fan on for 10 min, then turn fan off for 30 min and repeat.
+# In this example full cycle time is 45 min: mist on 5min + fan on 10min + off 30min.
+# I.e. sum of on+off time for each actuator = full cycle time. 5+40=45, 10+35=45.
+MIX_ORDER = ['mist', 'fan']  # Define action priority in mix.
 
 state_list = [
     {'name': 't0h0w0', 'avg': MIN_AVG_HOURS,  # Don't average, emergency state.
@@ -69,13 +74,13 @@ state_list = [
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
     {'name': 't25h0w0', 'avg': 12,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 0, 'wmax': 5},
-     'action': {'water': [30, 10230], 'mix': {'mist': 30, 'fan': 60, 'off': 1350}}},  # Water for 30 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with fan for 1 hour.
+     'action': {'water': [30, 10230], 'mix': {'mist': [30, 1410], 'fan': [60, 1380]}}},  # Water for 30 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with fan for 1 hour.
     {'name': 't25h0w5', 'avg': 12,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230], 'mist': [30, 1410]}},  # Water for 30 min in 1 week. Mist for 30 minutes every day.
     {'name': 't25h40w0', 'avg': 12,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 0, 'wmax': 5},
-     'action': {'water': [30, 10230], 'mix': {'mist': 5, 'fan': 60, 'off': 1375}}},  # Water for 30 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with fan for 1 hour.
+     'action': {'water': [30, 10230], 'mix': {'mist': [5, 1435], 'fan': [60, 1380]}}},  # Water for 30 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with fan for 1 hour.
     {'name': 't25h40w5', 'avg': 12,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230], 'mist': [5, 1435]}},  # Water for 30 min in 1 week. Mist for 5 minutes every day.
@@ -87,7 +92,7 @@ state_list = [
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
     {'name': 't28h0w0', 'avg': 6,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 0, 'wmax': 5},
-     'action': {'water': [30, 10230], 'mix': {'mist': 30, 'fan': 60, 'off': 30}}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with fan for 1 hour.
+     'action': {'water': [30, 10230], 'mix': {'mist': [30, 90], 'fan': [60, 60]}}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with fan for 1 hour.
     {'name': 't28h0w5', 'avg': 6,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230], 'mist': [30, 90]}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light.
@@ -99,7 +104,7 @@ state_list = [
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
     {'name': 't36h0w0', 'avg': MIN_AVG_HOURS,  # Don't average, emergency state.
      'criteria': {'tmin': 36, 'tmax': 100, 'hmin': 0, 'hmax': 100.1, 'wmin': 0, 'wmax': 100},
-     'action': {'mix': {'mist': 30, 'fan': 30}, 'ac': [60, 0], 'shade': [400, 0]}},  # When t_amb > 36 or t_obj > 25
+     'action': {'mix': {'mist': [30, 30], 'fan': [30, 30]}, 'ac': [60, 0], 'shade': [400, 0]}},  # When t_amb > 36 or t_obj > 25
 ]
 
 
@@ -251,30 +256,50 @@ def _run_state_action():
     act_name = state['name']        # Keep name for reporting.
     actions = state['action']
 
-    print state
-    print actions
     # Check if time gone per every single required action in given state
     for action, params in actions.iteritems():
+        # Mix means: each actuator is enable for given time and disabled for all other times in the same dictionary.
+        # i.e. mix can be split as simple action with predefined *order* of activity.
         if action in PRIM_ACTIONS:
-            print "Enter simple action", action
-            eligible_change = get_last_change_minutes(action, la[action]) > params[not la[action]]
-            print "Need change", action, eligible_change
-            if eligible_change:
-                la[action] = not la[action]
+            la = _invert_actuator_value_if_was_enough(la, action, params[not la[action]])  # Dirty trick: use true/false as index
         elif action == 'mix':  # mix action.
-            print params
-            qaz = ''
-            for k, v in params.iteritems():
-                qaz += '%s: %s, ' % (k, v)
-            print "Enter mix action:", qaz
-            pass
+            na = copy.copy(la)
+            for mix_action in MIX_ORDER:
+                times = params[mix_action]  # [on, off]
+
+                # Exit the loop if actuator inverted from False to True.
+                # On contrary, continue the loop if actuator is inverted from True to False.
+                na = _invert_actuator_value_if_was_enough(la, mix_action, times[not la[mix_action]])  # Dirty trick: use true/false as index
+
+                if la[mix_action] != na[mix_action]:
+                    la = na  # Update the last action. Prepare it for further activation.
+                    # Exit the loop if actuator inverted from False to True. Relate to initial INVERTED value since:
+                    # 1. The value was inverted by _invert_actuator_value_if_was_enough()
+                    # 2. The new actions (na) was assigned back to la.
+                    if la[mix_action]:
+                        break
         else:  # Skip non-implemented actuators
-            print "Enter non-supported action", action
             pass
 
-    print "Action", la
+    print "Action", la, na
     # activate(reason='Automate for state: %s' % act_name, **la)
 
+
+def _invert_actuator_value_if_was_enough(act_dict, act_name, time_in_state_min):
+    '''Invert actuator value in the dictionary if was in same state longer than time_in_state_min.
+    Don't change other actuators' state.
+
+    :param act_dict:           contains current state of all actuators
+    :param act_name:           points to required actuator
+    :param time_in_state_min:  criteria for change.
+    :return:                   dictionary with updated state.
+    '''
+    ad = copy.deepcopy(act_dict)
+    eligible_change = get_last_change_minutes(act_name, act_dict[act_name]) > time_in_state_min
+    if eligible_change:
+        ad[act_name] = not ad[act_name]
+
+    return ad
 
 def get_last_change_minutes(actuator, is_on):
     '''Return 'minutes' how long time ago the requested actuator was set in required state.
