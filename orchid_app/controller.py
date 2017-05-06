@@ -302,12 +302,14 @@ def _invert_actuator_value_if_was_enough(act_dict, act_name, time_in_state_min):
     :param time_in_state_min:  criteria for change.
     :return:                   dictionary with updated state.
     '''
+
     ad = copy.deepcopy(act_dict)
     eligible_change = get_last_change_minutes(act_name, act_dict[act_name]) > time_in_state_min
     if eligible_change:
         ad[act_name] = not ad[act_name]
 
     return ad
+
 
 def get_last_change_minutes(actuator, is_on):
     '''Return 'minutes' how long time ago the requested actuator was set in required state.
@@ -349,8 +351,7 @@ def _diff_datetime_mins(t1, t2):
     Both objects must be in the same timezone (UTC).
     '''
 
-    diff = t1 - t2
-    return (diff.days * 86400 + diff.seconds) / 60.0
+    return (t1 - t2).total_seconds() / 60
 
 
 def send_message(subj, msg):

@@ -45,6 +45,7 @@ INSTALLED_APPS = [
 
     # my app
     'orchid_app',
+    # 'orchid_app.myfilters',
 ]
 
 MIDDLEWARE = [

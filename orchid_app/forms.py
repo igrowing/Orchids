@@ -5,11 +5,13 @@ from orchid_app import models
 
 
 class ActionsForm(forms.Form):
-    water = forms.BooleanField(required=False)
-    mist = forms.BooleanField(required=False)
-    fan = forms.BooleanField(required=False)
-    light = forms.BooleanField(required=False)
-    heat = forms.BooleanField(required=False)
+    water = forms.BooleanField(required=False, help_text='Dripping system')
+    mist = forms.BooleanField(required=False, help_text='Increases humidity, lowers temperature')
+    fan = forms.BooleanField(required=False, help_text='Moves air, lowers temperature')
+    light = forms.BooleanField(required=False, help_text='Photosynthesis makes food for plants')
+    heat = forms.BooleanField(required=False, help_text='Anti-freezing system')
+    time = forms.IntegerField(min_value=0, max_value=999, required=False, help_text="Shut off after X in minutes (0 - don't shut off)",
+                              initial=0, disabled=False)
 
 class OrchidForm(forms.ModelForm):
 

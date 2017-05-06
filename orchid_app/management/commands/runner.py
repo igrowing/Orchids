@@ -47,19 +47,18 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
+        os.system('logger orchid_runner has started')
+        # Shut down on system start/restart everything could be open.
+        controller.activate(reason='System startup', force=True, mist=False, drip=False, fan=False, light=False, heat=False)
+
         # Run measure and publishing of GPIO data in background.
         threads = [Thread(target=water.run),
                    Thread(target=anemometer.run),
+                   Thread(target=controller.act_current_state),
                    ]
         for t in threads:
             t.setDaemon(True)
             t.start()
-
-        # TODO: Add here init for activators threads.
-
-        os.system('logger orchid_runner has started')
-        # Shut down on system start/restart everything could be open.
-        controller.activate(reason='System startup', force=True, mist=False, drip=False, fan=False, light=False, heat=False)
 
         # Keep preliminary data for averaging
         data = {'wind': [], 'water': 0.0, 't_amb': [], 't_obj': [], 'hpa': [], 'rh': [], 'lux': []}
