@@ -72,34 +72,34 @@ state_list = [
     {'name': 't17h40w0', 'avg': 12,
      'criteria': {'tmin': 17, 'tmax': 25, 'hmin': 40, 'hmax': 100.1, 'wmin': 0, 'wmax': 100},
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
-    {'name': 't25h0w0', 'avg': 12,
+    {'name': 't25h0w0', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 0, 'wmax': 5},
      'action': {'water': [30, 10230], 'mix': {'mist': [30, 1410], 'fan': [60, 1380]}}},  # Water for 30 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with fan for 1 hour.
-    {'name': 't25h0w5', 'avg': 12,
+    {'name': 't25h0w5', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230], 'mist': [30, 1410]}},  # Water for 30 min in 1 week. Mist for 30 minutes every day.
-    {'name': 't25h40w0', 'avg': 12,
+    {'name': 't25h40w0', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 0, 'wmax': 5},
      'action': {'water': [30, 10230], 'mix': {'mist': [5, 1435], 'fan': [60, 1380]}}},  # Water for 30 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with fan for 1 hour.
-    {'name': 't25h40w5', 'avg': 12,
+    {'name': 't25h40w5', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230], 'mist': [5, 1435]}},  # Water for 30 min in 1 week. Mist for 5 minutes every day.
-    {'name': 't25h80w0', 'avg': 12,
+    {'name': 't25h80w0', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 5},
      'action': {'water': [30, 10230], 'fan': [60, 1380]}},  # Water for 30 min in 1 week. fan for 1 hour at the most light and no wind.
-    {'name': 't25h80w5', 'avg': 12,
+    {'name': 't25h80w5', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100.1, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
-    {'name': 't28h0w0', 'avg': 6,
+    {'name': 't28h0w0', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 0, 'wmax': 5},
      'action': {'water': [30, 10230], 'mix': {'mist': [30, 90], 'fan': [60, 60]}}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with fan for 1 hour.
-    {'name': 't28h0w5', 'avg': 6,
+    {'name': 't28h0w5', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230], 'mist': [30, 90]}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light.
-    {'name': 't28h80w0', 'avg': 6,
+    {'name': 't28h80w0', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 5},
      'action': {'water': [30, 10230], 'fan': [30, 90]}},  # Water for 30 min in 1 week. fan for 30 minutes at the most light and no wind.
-    {'name': 't28h80w5', 'avg': 6,
+    {'name': 't28h80w5', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100.1, 'wmin': 5, 'wmax': 100},
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
     {'name': 't36h0w0', 'avg': MIN_AVG_HOURS,  # Don't average, emergency state.
