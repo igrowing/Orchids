@@ -11,6 +11,7 @@ from orchid_app.utils import sendmail, pushb
 
 MIN_AVG_HOURS = 0.4   # TODO: reconsider the value
 MAX_TIMEOUT = 999999  # Very long time indicated no action was found
+NO_DATA = -1
 
 # Global variable to minimize page loading time.
 current_state = []
@@ -184,6 +185,11 @@ def get_last_action():
 def get_current_state():
     if not current_state:
         read_current_state()
+
+    # Return empty dict and -1 if failed to retrieve current_state
+    if not current_state:
+        return {}, NO_DATA
+
     return current_state
 
 
@@ -202,6 +208,10 @@ def read_current_state():
             status = calc_avg(duration)
             status['duration'] = duration
 
+        # Abort current_state update if no meaningful data in the DB.
+        if len(status.keys()) <= 2:
+            return
+
         cr = state_list[i]['criteria']
         if cr['tmin'] <= status['t_amb'] < cr['tmax'] and cr['hmin'] <= status['rh'] < cr['hmax'] and cr['wmin'] <= status['wind'] < cr['wmax']:
             global current_state
@@ -218,9 +228,15 @@ def calc_avg(duration):
     ed = defaultdict(int)  # Allow automatic adding of key is the key is not present in the dict.
     ed['duration'] = duration
 
-    # Return empty dictionary if no records found (new database).
     if ml.count() == 0:
-        return ed
+        # Return last record if system was off long time.
+        try:
+            ml = [models.Sensors.objects.last().get_all_fields()]
+        except:
+            ml = []
+        # Return empty dictionary if no records found (new database).
+        if not ml:
+            return ed
 
     # Sum all values for each parameter.
     for d in ml:
@@ -246,6 +262,41 @@ def act_current_state():
         time.sleep(60 - (time.time() - ts))
 
 
+def get_next_action():
+    '''Get dictionary of actuators in next planned state (on/off).
+    Return None if no reasonable data available.
+    '''
+
+    la = get_last_action()          # Read actuators current status.
+    state = get_current_state()[0]  # Take dictionary only. Index doesn't matter.
+
+    # Abort calculation if no meaningful data available.
+    if not state:
+        return
+
+    actions = state['action']
+    result = []
+    # Check if time gone per every single required action in given state
+    for action, params in actions.iteritems():
+        # Mix means: each actuator is enable for given time and disabled for all other times in the same dictionary.
+        # i.e. mix can be split as simple action with predefined *order* of activity.
+        if action in PRIM_ACTIONS:
+            # Display 0 minutes (should be activated now) if negative difference calculated.
+            next_change_in_min = max(params[not la[action]] - get_last_change_minutes(action, la[action]), 0)  # Dirty trick: use true/false as index
+            next_action = not la[action]
+            result.append((action, next_change_in_min, next_action))
+        elif action == 'mix':  # mix action.
+            for mix_action in MIX_ORDER:
+                times = params[mix_action]  # [on, off]
+                next_change_in_min = max(times[not la[mix_action]] - get_last_change_minutes(mix_action, la[mix_action]), 0)
+                next_action = not la[mix_action]
+                result.append((mix_action, next_change_in_min, next_action))
+        else:  # Skip non-implemented actuators
+            pass
+
+    return result
+
+
 def _run_state_action():
     '''Set actuators in appropriate position, which defined by current state.
     Actuator is eligible to turn on if:
@@ -259,6 +310,11 @@ def _run_state_action():
 
     la = get_last_action()          # Read actuators current status.
     state = get_current_state()[0]  # Take dictionary only. Index doesn't matter.
+
+    # Abort calculation if no meaningful data available.
+    if not state:
+        return
+
     act_name = state['name']        # Keep name for reporting.
     actions = state['action']
 
