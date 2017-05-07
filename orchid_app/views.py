@@ -77,7 +77,18 @@ def list(request):
     if i != controller.NO_DATA:
         statuses[i] = True
 
-    return render(request, 'orchid_app/sensor_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a, 'statuses': statuses})
+    al = _get_next_actions_parsed()
+
+    return render(request, 'orchid_app/sensor_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table,
+                                                           'actuators': a, 'statuses': statuses, 'actionList': al})
+
+
+def _get_next_actions_parsed():
+    al = controller.get_next_action()
+    if al:
+        for i in range(len(al)):
+            al[i] = (al[i][0].capitalize(), _verb(al[i][2]).capitalize(), 'Now' if al[i][1] == 0 else al[i][1])
+    return al
 
 
 def action_list(request):
@@ -124,7 +135,10 @@ def action_list(request):
     if i != controller.NO_DATA:
         statuses[i] = True
 
-    return render(request, 'orchid_app/action_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a, 'statuses': statuses})
+    al = _get_next_actions_parsed()
+
+    return render(request, 'orchid_app/action_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table,
+                                                           'actuators': a, 'statuses': statuses, 'actionList': al})
 
 
 def _verb(b):

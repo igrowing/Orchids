@@ -253,15 +253,27 @@
 -->
     <table width="800">
         <tr>
-            <td>
-                <h4>Status</h4>
+            <td valign="top">
+                <h4>Actuators are:</h4>
                 {% for key, value in actuators.items %}
                     <p><li>
                         {{key}}: {{ value }}
                     </li></p>
                 {% endfor %}
             </td><td>
+            </td><td valign="top">
+            {% if actionList %}
+                <h4>Next actions</h4>
+                <table summary="Next actions">
+                <tr><th>What</th><th>When</th><th>Will be</th>
+                {% for a, b, c in actionList %}
+                    <tr><td>{{ a }}</td><td>{{ c }}</td><td>{{ b }}</td></tr>
+                {% endfor %}
+                </table>
+            {% endif %}
             </td><td>
+            </td><td valign="top">
+            <h4>Manual control</h4>
             {{ form.as_p }}
             <input type="submit" value="Ready? Go!">
             </td>
