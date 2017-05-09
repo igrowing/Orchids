@@ -75,34 +75,34 @@ state_list = [
      'criteria': {'tmin': 17, 'tmax': 25, 'hmin': 40, 'hmax': 100.1, 'wmin': 0, 'wmax': 100},
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
     {'name': 't25h0w0', 'avg': 2,
-     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 0, 'wmax': 5},
+     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 0, 'wmax': 2},
      'action': {'water': [30, 10230], 'mix': {'mist': [30, 1410], 'fan': [60, 1380]}}},  # Water for 30 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with fan for 1 hour.
-    {'name': 't25h0w5', 'avg': 2,
-     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 5, 'wmax': 100},
+    {'name': 't25h0w2', 'avg': 2,
+     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 2, 'wmax': 100},
      'action': {'water': [30, 10230], 'mist': [30, 1410]}},  # Water for 30 min in 1 week. Mist for 30 minutes every day.
     {'name': 't25h40w0', 'avg': 2,
-     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 0, 'wmax': 5},
+     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 0, 'wmax': 2},
      'action': {'water': [30, 10230], 'mix': {'mist': [5, 1435], 'fan': [60, 1380]}}},  # Water for 30 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with fan for 1 hour.
-    {'name': 't25h40w5', 'avg': 2,
-     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 5, 'wmax': 100},
+    {'name': 't25h40w2', 'avg': 2,
+     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 2, 'wmax': 100},
      'action': {'water': [30, 10230], 'mist': [5, 1435]}},  # Water for 30 min in 1 week. Mist for 5 minutes every day.
     {'name': 't25h80w0', 'avg': 2,
-     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 5},
+     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 2},
      'action': {'water': [30, 10230], 'fan': [60, 1380]}},  # Water for 30 min in 1 week. fan for 1 hour at the most light and no wind.
-    {'name': 't25h80w5', 'avg': 2,
-     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100.1, 'wmin': 5, 'wmax': 100},
+    {'name': 't25h80w2', 'avg': 2,
+     'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100.1, 'wmin': 2, 'wmax': 100},
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
     {'name': 't28h0w0', 'avg': 1,
-     'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 0, 'wmax': 5},
+     'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 0, 'wmax': 2},
      'action': {'water': [30, 10230], 'mix': {'mist': [30, 90], 'fan': [60, 60]}}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with fan for 1 hour.
-    {'name': 't28h0w5', 'avg': 1,
-     'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 5, 'wmax': 100},
+    {'name': 't28h0w2', 'avg': 1,
+     'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 2, 'wmax': 100},
      'action': {'water': [30, 10230], 'mist': [30, 90]}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light.
     {'name': 't28h80w0', 'avg': 1,
-     'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 5},
+     'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 2},
      'action': {'water': [30, 10230], 'fan': [30, 90]}},  # Water for 30 min in 1 week. fan for 30 minutes at the most light and no wind.
-    {'name': 't28h80w5', 'avg': 1,
-     'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100.1, 'wmin': 5, 'wmax': 100},
+    {'name': 't28h80w2', 'avg': 1,
+     'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100.1, 'wmin': 2, 'wmax': 100},
      'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
     {'name': 't36h0w0', 'avg': MIN_AVG_HOURS,  # Don't average, emergency state.
      'criteria': {'tmin': 36, 'tmax': 100, 'hmin': 0, 'hmax': 100.1, 'wmin': 0, 'wmax': 100},
@@ -186,6 +186,11 @@ def get_current_state():
     if not current_state:
         read_current_state()
 
+    # Refresh current state calculation if data is obsolete
+    dt = (datetime.now() - current_state[2]).total_seconds() / 60
+    if current_state and dt >= 10:
+        read_current_state()
+
     # Return empty dict and -1 if failed to retrieve current_state
     if not current_state:
         return {}, NO_DATA
@@ -215,7 +220,7 @@ def read_current_state():
         cr = state_list[i]['criteria']
         if cr['tmin'] <= status['t_amb'] < cr['tmax'] and cr['hmin'] <= status['rh'] < cr['hmax'] and cr['wmin'] <= status['wind'] < cr['wmax']:
             global current_state
-            current_state = (state_list[i], i)
+            current_state = (state_list[i], i, datetime.now())
             break
 
     sys.stdout.write('Read status: %s' % repr(current_state))
