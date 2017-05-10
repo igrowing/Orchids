@@ -205,6 +205,7 @@ def read_current_state():
 
     # Read first the status with minimal averaging to catch emergency state (lowest and highest temperatures).
     status = calc_avg(MIN_AVG_HOURS)
+    flag = False
 
     for i in range(len(state_list)):
         duration = state_list[i]['avg']
@@ -221,7 +222,24 @@ def read_current_state():
         if cr['tmin'] <= status['t_amb'] < cr['tmax'] and cr['hmin'] <= status['rh'] < cr['hmax'] and cr['wmin'] <= status['wind'] < cr['wmax']:
             global current_state
             current_state = (state_list[i], i, datetime.now())
+            flag = True
             break
+
+    # Recovery procedure: when temperature is close to changing threshold there is a case when recalculation with
+    # new average time brings result from previous state. In such conditions the status becomes None.
+    # TODO: Optimize this.
+    if not flag:
+        status = calc_avg(2)
+        # Abort current_state update if no meaningful data in the DB.
+        if len(status.keys()) <= 2:
+            return
+
+        for i in range(len(state_list)):
+            cr = state_list[i]['criteria']
+            if cr['tmin'] <= status['t_amb'] < cr['tmax'] and cr['hmin'] <= status['rh'] < cr['hmax'] and cr['wmin'] <= status['wind'] < cr['wmax']:
+                global current_state
+                current_state = (state_list[i], i, datetime.now())
+                break
 
     sys.stdout.write('Read status: %s' % repr(current_state))
 
@@ -421,3 +439,12 @@ def send_message(subj, msg):
     # Send emergency IM
     pushb.send_note(subj, msg)
 
+
+def read_cpu_temp():
+    try:
+        file = open('/sys/class/thermal/thermal_zone0/temp','r')
+        lines = file.readlines()
+        file.close()
+        return float(lines[0]) / 1000
+    except:
+        return 0.0
