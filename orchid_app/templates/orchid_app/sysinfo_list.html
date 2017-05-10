@@ -1,0 +1,47 @@
+{% load django_tables2 %}
+<!DOCTYPE html>
+<html>
+<head>
+	<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+	<style id="Orchids_care_4027_Styles">
+	body {
+background: rgb(247,251,252);
+background: -moz-radial-gradient(center, ellipse cover, rgba(247,251,252,1) 0%, rgba(217,237,242,1) 62%, rgba(173,217,228,1) 100%);
+background: -webkit-radial-gradient(center, ellipse cover, rgba(247,251,252,1) 0%,rgba(217,237,242,1) 62%,rgba(173,217,228,1) 100%);
+background: radial-gradient(ellipse at center, rgba(247,251,252,1) 0%,rgba(217,237,242,1) 62%,rgba(173,217,228,1) 100%);
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f7fbfc', endColorstr='#add9e4',GradientType=1 );
+}
+	</style>
+	<title>&#10046; Orchids - always alive</title>
+</head>
+<body>
+<table width="97%"><tr>
+<td><h1>&#10046; Orchids &#10046;</h1></td><td align="right"><a href="/">Show Sensors</a><br>
+<a href="/actions/">Show Actions</a></td>
+</tr></table>
+<hr>
+<form action="" method="post">{% csrf_token %}
+{% if messages %}
+<ul class="messages">
+    {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}> {{ message }} </li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+ <label for="update"><input type="checkbox" name="update" value="True" id="update" hidden='True'> </label><br>
+<input type="submit" value="Update Firmware">
+</form>
+
+
+{% comment %}
+    <ul>
+        {% for object in table %}
+            <li>
+                {{object.date}}: {{ object.t_amb }} {{ object.t_obj }} {{ object.rh }} {{ object.lux }} {{ object.hpa }} {{ object.wind }} {{ object.water }}
+            </li>
+        {% endfor %}
+    </ul>
+{% endcomment %}
+</body>
+</html>

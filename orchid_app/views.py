@@ -4,8 +4,9 @@ from django.shortcuts import render
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from . import models
-from forms import ActionsForm
+from forms import ActionsForm, SystemForm
 import orchid_app.controller as controller
+import orchid_app.utils.sysinfo as sysinfo
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -139,6 +140,18 @@ def action_list(request):
 
     return render(request, 'orchid_app/action_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table,
                                                            'actuators': a, 'statuses': statuses, 'actionList': al})
+
+
+def sysinfo_list(request):
+    form = SystemForm(request.POST or None)
+    if request.method == "POST":
+        if form.is_valid():
+            # TODO: Add FW refresh procedure
+            pass
+
+    si = sysinfo.get_sysinfo_d()
+
+    return render(request, 'orchid_app/sysinfo_list.html', {'form': form, 'sysinfo': si})
 
 
 def _verb(b):
