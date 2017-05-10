@@ -439,12 +439,3 @@ def send_message(subj, msg):
     # Send emergency IM
     pushb.send_note(subj, msg)
 
-
-def read_cpu_temp():
-    try:
-        file = open('/sys/class/thermal/thermal_zone0/temp','r')
-        lines = file.readlines()
-        file.close()
-        return float(lines[0]) / 1000
-    except:
-        return 0.0
