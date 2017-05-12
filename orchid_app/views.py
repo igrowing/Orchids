@@ -149,7 +149,7 @@ def sysinfo_list(request):
             # TODO: Add FW refresh procedure
             pass
 
-    si = sysinfo.get_sysinfo_d()
+    si = sysinfo.get_sysinfo_html()
 
     return render(request, 'orchid_app/sysinfo_list.html', {'form': form, 'sysinfo': si})
 

@@ -1,0 +1,106 @@
+<div align=center>
+<table border=1 cellpadding=5 cellspacing=2 width=70%(pct)s>
+ <tr>
+  <td rowspan=3 width=10%(pct)s>System</td>
+  <td width=15%(pct)s>Date, time</td>
+  <td>%(datetime)s</td>
+  <td rowspan=3  width=15%(pct)s>Picture</td>
+ </tr>
+ <tr>
+  <td>Time zone</td>
+  <td>%(timezone)s</td>
+ </tr>
+ <tr>
+  <td>Uptime</td>
+  <td>%(uptime)s</td>
+ </tr>
+ </table></p>
+
+ <table border=1 cellpadding=5 cellspacing=2 width=70%(pct)s>
+ <tr>
+  <td rowspan=5 width=10%(pct)s>CPU</td>
+  <td>Cores</td>
+  <td colspan=3>%(cores)s</td>
+  <td rowspan=5 width=15%(pct)s>Picture</td>
+ </tr>
+ <tr>
+  <td width=15%(pct)s>Parameter</td>
+  <td align='center'>Min</td>
+  <td align='center'>Current</td>
+  <td align='center'>Max</td>
+ </tr>
+ <tr>
+  <td>Frequency</td>
+  <td align='center'>%(f_min)s</td>
+  <td align='center'>%(f_current)s</td>
+  <td align='center'>%(f_max)s</td>
+ </tr>
+ <tr>
+  <td>Load</td>
+  <td align='center'>%(l_min)s</td>
+  <td align='center'>%(l_current)s</td>
+  <td align='center'>%(l_max)s</td>
+ </tr>
+ <tr>
+  <td>Temp</td>
+  <td align='center'>%(t_min)s</td>
+  <td align='center'>%(t_current)s</td>
+  <td align='center'>%(t_max)s</td>
+ </tr>
+ </table></p>
+
+ <table border=1 cellpadding=5 cellspacing=2 width=70%(pct)s>
+ <tr>
+  <td rowspan=3 width=10%(pct)s>Memory</td>
+  <td width=15%(pct)s>Type</td>
+  <td align='center'>Total</td>
+  <td align='center'>Used</td>
+  <td align='center'>%(pct)s</td>
+  <td rowspan=3 width=15%(pct)s>Picture</td>
+ </tr>
+ <tr>
+  <td>RAM</td>
+  <td align='center'>%(m_total)s</td>
+  <td align='center'>%(m_used)s</td>
+  <td align='center'>%(m_percent)s</td>
+ </tr>
+ <tr>
+  <td>Flash</td>
+  <td align='center'>%(f_total)s</td>
+  <td align='center'>%(f_used)s</td>
+  <td align='center'>%(f_percent)s</td>
+ </tr>
+</table></p>
+
+<table border=1 cellpadding=5 cellspacing=2 width=70%(pct)s>
+<tr>
+  <td rowspan=6 width=10%(pct)s>Network</td>
+  <td align='center'>Tx, GB</td>
+  <td align='center'>Rx, GB</td>
+  <td align='center'>Errors</td>
+  <td align='center'>Drops</td>
+ </tr>
+ <tr>
+  <td align='center'>%(tx)s</td>
+  <td align='center'>%(rx)s</td>
+  <td align='center'>%(errors)s</td>
+  <td align='center'>%(drops)s</td>
+ </tr>
+ <tr>
+  <td>Type</td>
+  <td align='center'>Speed</td>
+  <td align='center'>MTU</td>
+  <td rowspan=3 width=15%(pct)s>Picture</td>
+ </tr>
+ <tr>
+  <td>eth0</td>
+  <td align='center'>%(e_speed)s</td>
+  <td align='center'>%(e_mtu)s</td>
+ </tr>
+ <tr>
+  <td>wlan0</td>
+  <td align='center'>%(w_speed)s</td>
+  <td align='center'>%(w_mtu)s</td>
+ </tr>
+</table>
+</div>

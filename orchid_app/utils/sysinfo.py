@@ -45,8 +45,7 @@ Out[49]:
 
 import time
 import psutil
-# import pprint
-from collections import OrderedDict
+import pprint
 
 
 def read_cpu_temp():
@@ -99,8 +98,8 @@ def read_network():
             d[k] = {'speed': v.speed, 'mtu': v.mtu}
     s = psutil.net_io_counters()
     d['counters'] = {
-        'sent_MB': s.bytes_sent/1024/1024,
-        'recv_MB': s.bytes_recv/1024/1024,
+        'sent_MB': int(s.bytes_sent/1024/1024),
+        'recv_MB': int(s.bytes_recv/1024/1024),
         'errors': s.errin + s.errout,
         'drops': s.dropin + s.dropout,
     }
@@ -108,24 +107,100 @@ def read_network():
 
 
 def get_sysinfo_d():
-    return OrderedDict((
-        ('system', read_system()),
-        ('cpu', read_cpu()),
-        ('memory', read_memory()),
-        ('network', read_network()),
-    ))
+    # TODO: reconsider structure. Maybe list of lists is better than dict of dicts.
+    return {
+        'system': read_system(),
+        'cpu': read_cpu(),
+        'memory': read_memory(),
+        'network': read_network(),
+    }
 
 
 def get_sysinfo_s():
     pass
 
 
+def get_sysinfo_html():
+    # TODO: Rewrite. This is ugly brute-force implementation. Build dynamic page generator.
+    # Reconsidering data structure can help.
+    # TODO: Add chart generation and output.
+
+    d = get_sysinfo_d()
+
+    # Get the template from file in relative path. The module can be called from different locations. So the template must be always available.
+    tmp_file = '/'.join(__file__.split('/')[:-1]) + '/sysinfo_template.html'
+    try:
+        f = open(tmp_file, 'r')
+        template = f.read()
+        f.close()
+    except Exception as e:
+        return 'Error occurred on opening template.'
+
+    datetime = d['system']['datetime']
+    timezone = d['system']['timezone']
+    uptime = d['system']['uptime']
+    cores = d['cpu']['cores']
+    f_min = d['cpu']['frequency']['min']
+    f_max = d['cpu']['frequency']['max']
+    f_current = d['cpu']['frequency']['current']
+    l_min = d['cpu']['load']['min']
+    l_max = d['cpu']['load']['max']
+    l_current = d['cpu']['load']['current']
+    t_min = d['cpu']['temp']['min']
+    t_max = d['cpu']['temp']['max']
+    t_current = d['cpu']['temp']['current']
+    m_total = d['memory']['RAM_MB']['total']
+    m_used = d['memory']['RAM_MB']['used']
+    m_percent = d['memory']['RAM_MB']['percent']
+    f_total = d['memory']['flash_GB']['total']
+    f_used = d['memory']['flash_GB']['used']
+    f_percent = d['memory']['flash_GB']['percent']
+    tx = d['network']['counters']['sent_MB']
+    rx = d['network']['counters']['recv_MB']
+    errors = d['network']['counters']['errors']
+    drops = d['network']['counters']['drops']
+    e_speed = d['network']['eth0']['speed']
+    e_mtu = d['network']['eth0']['mtu']
+    w_speed = d['network']['wlan0']['speed']
+    w_mtu = d['network']['wlan0']['mtu']
+    pct = '%'
+
+    return template % locals()
+
+keys = []
+values = []
+def print_dict(d):
+    '''
+    Just for fun in programming: recursive function to print full hierarchy of nested dictionary.
+    This is a stub for automated dictionary to HTML or to tables conversion.
+    :param d:
+    :return:
+    '''
+    for k, v in d.iteritems():
+        if type(v) == dict:
+            print_kv()
+            print k
+            print_dict(v)
+        else:
+            global keys, values
+            keys.append(k)
+            values.append(v)
+    print_kv()
+
+
+def print_kv():
+    global keys, values
+    if keys:
+        print keys
+        print values
+        keys = []
+        values = []
+
+
 # Use this trick to execute the file. Normally, it's a module to be imported.
 if __name__ == "__main__":
     print "Running as standalone:\n    " + __file__
-    # pp = pprint.PrettyPrinter(indent=2)
-    # pp.pprint(get_sysinfo_d())
-    for k, v in get_sysinfo_d().iteritems():
-        print k, v
+    pp = pprint.PrettyPrinter(indent=2)
+    pp.pprint(get_sysinfo_d())
     print get_sysinfo_s()
 
