@@ -13,6 +13,7 @@ class ActionsForm(forms.Form):
     time = forms.IntegerField(min_value=0, max_value=999, required=False, help_text="Shut off after X in minutes (0 - don't shut off)",
                               initial=0, disabled=False)
 
+
 class SystemForm(forms.Form):
     fw_update = forms.BooleanField(required=False, initial=True)
 

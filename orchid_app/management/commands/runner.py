@@ -133,7 +133,9 @@ def check_water_flow(liters):
             msg = 'Water leakage is detected in circuit(s): '
             msg += 'drip ' if la.water else ''
             msg += 'mist' if la.mist else ''
-            msg += '\nOpened valve closed. This may impact watering and/or temperature conditions.\nTake actions immediately.'
+            msg += '\n%s liters of water ran in last minute when should be no more than %s liters/minute.\n' \
+                   'Opened valve closed. This may impact watering and/or temperature conditions.\n' \
+                   'Take actions immediately.' % (str(round(liters, 3)), str(MAX_FLOW_RATE))
             subj = 'Orchid farm emergency: water leakage detected'
             controller.send_message(subj, msg)
 
@@ -146,8 +148,10 @@ def check_water_flow(liters):
                                 fan=la.fan, light=la.light, heat=la.heat)
 
             # Build emergency message
-            msg = 'Water leakage is detected while all valves should be closed.'
-            msg += '\nTried to close all valves. This may impact watering and/or temperature conditions.\nTake actions immediately.'
+            msg = 'Water leakage is detected while all valves should be closed.'\
+                  '\n%s liters of water leaked in last minute when should be 0.\n' \
+                  'Tried to close all valves. This may impact watering and/or temperature conditions.\n' \
+                  'Take actions immediately.' % str(round(liters, 3))
             subj = 'Orchid farm emergency: water leakage detected'
             controller.send_message(subj, msg)
             send_counter += 1

@@ -239,12 +239,19 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f7fbfc', end
 <form action="" method="post" onsubmit="return validate();"> {% csrf_token %}
 <script>
 function validate() {
+  // Pop up user confirmation when:
+  // One or more checkboxes are checked
+  // AND
+  // No timer activated (0 in time field).
+
   inputs = document.getElementsByTagName("input");
   for (var i=0; i < inputs.length; i++) {
-      if (inputs[i].id.match("id_") && inputs[i].type == 'checkbox' && inputs[i].checked && document.getElementById('id_time').value == 0)  {
-        return confirm('The time is set to 0.\nThis means your command will stop automation until you shut off all actuators manually.\nAre you sure?');
+      if (inputs[i].type == 'checkbox' && inputs[i].checked && document.getElementById('time').value == 0)  {
+        // Return user decision on first checked checkbox.
+        return confirm('The time is set to 0.\nThis means your command will stop automation until you shut off all actuators manually.\n\nAre you sure?');
       }
   }
+  // Return null (means true) if no checkboxes checked or time > 0.
 }
 </script>
 
