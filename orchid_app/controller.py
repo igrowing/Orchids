@@ -24,7 +24,7 @@ act_dict = {
     't6h40w0': {'water': [30, 20130]},  # Water for 30 min in 2 weeks.
     't6h80w0': {'water': [15, 20145]},  # Water for 15 min in 2 weeks.
     't17h0w0': {'water': [30, 10230], 'mist': [60, 2820]},  # Water for 30 min in 1 week. Mist for 1 hour every 2 days.
-    't17h40w0': {'water': [30, 10230]},  # Water for 30 min in 1 week.
+    't17h40w0': {'water': [15, 10245]},  # Water for 30 min in 1 week.
     't25h0w0': {'water': [30, 10230], 'mix': {'mist': 30, 'vent': 60, 'off': 1350}},  # Water for 30 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with vent for 1 hour.
     't25h0w5': {'water': [30, 10230], 'mist': [30, 1410]},  # Water for 30 min in 1 week. Mist for 30 minutes every day.
     't25h40w0': {'water': [30, 10230], 'mix': {'mist': 5, 'vent': 60, 'off': 1375}},  # Water for 30 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with vent for 1 hour.
@@ -241,7 +241,7 @@ def read_current_state():
                 current_state = (state_list[i], i, datetime.now())
                 break
 
-    sys.stdout.write('Read status: %s' % repr(current_state))
+    # sys.stdout.write('Read status: %s' % repr(current_state))
 
 
 def calc_avg(duration):
@@ -354,7 +354,7 @@ def _run_state_action():
 
                 # Exit the loop if actuator inverted from False to True.
                 # On contrary, continue the loop if actuator is inverted from True to False.
-                na = _invert_actuator_value_if_was_enough(la, mix_action, times[not la[mix_action]])  # Dirty trick: use true/false as index
+                na = _invert_actuator_value_if_was_enough(na, mix_action, times[not la[mix_action]])  # Dirty trick: use true/false as index
 
                 if la[mix_action] != na[mix_action]:
                     la = na  # Update the last action. Prepare it for further activation.
@@ -367,8 +367,8 @@ def _run_state_action():
             pass
 
     print "Action", la
-    sys.stdout.write('Set automatic action for state %s: %s' % (act_name, repr(la)))
-    sys.stdout.flush()
+    # sys.stdout.write('Set automatic action for state %s: %s' % (act_name, repr(la)))
+    # sys.stdout.flush()
     # activate(reason='Automate for state: %s' % act_name, **la)
 
 

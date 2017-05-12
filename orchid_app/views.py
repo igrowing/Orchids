@@ -88,7 +88,7 @@ def _get_next_actions_parsed():
     al = controller.get_next_action()
     if al:
         for i in range(len(al)):
-            al[i] = (al[i][0].capitalize(), _verb(al[i][2]).capitalize(), 'Now' if al[i][1] == 0 else al[i][1])
+            al[i] = (al[i][0].capitalize(), _verb(al[i][2]).capitalize(), 'Now' if al[i][1] == 0 else _humanize(al[i][1]))
     return al
 
 
@@ -157,3 +157,16 @@ def sysinfo_list(request):
 def _verb(b):
     '''Convert boolean into verbal off/on.'''
     return ['off', 'on'][b] if type(b) == bool else b
+
+def _humanize(fl):
+    '''Convert minutes into human readable string.'''
+
+    fl = int(fl)
+    m = fl % 1440 % 60
+    h = fl % 1440 / 60
+    d = fl / 1440
+    res = (str(d) + 'd') if d else ''
+    res += (str(h) + 'h') if h else ''
+    res += (str(m) + 'm') if m else ''
+    return res if res else 0
+

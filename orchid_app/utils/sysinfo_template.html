@@ -20,7 +20,7 @@
  <tr>
   <td rowspan=5 width=10%(pct)s>CPU</td>
   <td>Cores</td>
-  <td colspan=3>%(cores)s</td>
+  <td align='center' colspan=3>%(cores)s</td>
   <td rowspan=5 width=15%(pct)s>Picture</td>
  </tr>
  <tr>
@@ -31,21 +31,21 @@
  </tr>
  <tr>
   <td>Frequency</td>
-  <td align='center'>%(f_min)s</td>
-  <td align='center'>%(f_current)s</td>
-  <td align='center'>%(f_max)s</td>
+  <td align='center'>%(f_min)s MHz</td>
+  <td align='center'>%(f_current)s MHz</td>
+  <td align='center'>%(f_max)s MHz</td>
  </tr>
  <tr>
   <td>Load</td>
-  <td align='center'>%(l_min)s</td>
-  <td align='center'>%(l_current)s</td>
-  <td align='center'>%(l_max)s</td>
+  <td align='center'>%(l_min)s%(pct)s</td>
+  <td align='center'>%(l_current)s%(pct)s</td>
+  <td align='center'>%(l_max)s%(pct)s</td>
  </tr>
  <tr>
   <td>Temp</td>
-  <td align='center'>%(t_min)s</td>
-  <td align='center'>%(t_current)s</td>
-  <td align='center'>%(t_max)s</td>
+  <td align='center'>%(t_min)s&#176;C</td>
+  <td align='center'>%(t_current)s&#176;C</td>
+  <td align='center'>%(t_max)s&#176;C</td>
  </tr>
  </table></p>
 
@@ -60,14 +60,14 @@
  </tr>
  <tr>
   <td>RAM</td>
-  <td align='center'>%(m_total)s</td>
-  <td align='center'>%(m_used)s</td>
+  <td align='center'>%(m_total)s MB</td>
+  <td align='center'>%(m_used)s MB</td>
   <td align='center'>%(m_percent)s</td>
  </tr>
  <tr>
   <td>Flash</td>
-  <td align='center'>%(f_total)s</td>
-  <td align='center'>%(f_used)s</td>
+  <td align='center'>%(f_total)s GB</td>
+  <td align='center'>%(f_used)s GB</td>
   <td align='center'>%(f_percent)s</td>
  </tr>
 </table></p>
@@ -88,7 +88,7 @@
  </tr>
  <tr>
   <td>Type</td>
-  <td align='center'>Speed</td>
+  <td align='center'>Speed, Mbps</td>
   <td align='center'>MTU</td>
   <td rowspan=3 width=15%(pct)s>Picture</td>
  </tr>
