@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import os
+import re
 import time
 from datetime import datetime, timedelta
 from threading import Thread
@@ -17,7 +18,7 @@ import orchid_app.sensors.mlx90614 as mlx
 import orchid_app.sensors.bme280 as bme
 
 import orchid_app.controller as controller
-from orchid_app.models import Sensors
+from orchid_app.models import Sensors, Actions
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -97,11 +98,34 @@ class Command(BaseCommand):
                     time.sleep(60)  # Wait 1 minute before retry.
 
                 # Process timer
-                if controller.manual_action_timer and (datetime.now() - controller.manual_action_timer[1]).total_seconds() > controller.manual_action_timer[0] * 60:
-                    self.stdout.write('Timer ended: %s' % datetime.now())
-                    self.stdout.flush()
-                    controller.activate(reason='Manual timer off', mist=False, drip=False, fan=False, light=False, heat=False)
-                    controller.manual_action_timer = []
+                try:
+                    # Find last record with Timer enable
+                    filt = {'reason__icontains': 'with timer'}
+                    qs = Actions.objects.filter(**filt).last()
+
+                    if 'with timer' in qs.reason.lower():
+                        min_l = re.findall('(\d+) min', qs.reason.lower())
+                        secs = int(min_l[0]) * 60 if min_l else 0
+                        # Time gone. Check if needed action.
+                        if (datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds() > secs:
+                            was_on = [k for k, v in qs.get_all_fields().iteritems() if v]
+                            if was_on:
+                                changed = False
+                                # Avoid exception in case of empty database.
+                                la = Actions.objects.last().get_all_fields()
+                                for i in was_on:
+                                    if la[i]:
+                                        la[i] = False
+                                        changed = True
+
+                                if changed:
+                                    self.stdout.write('Timer ended: %s' % datetime.now())
+                                    self.stdout.flush()
+                                    controller.activate(reason='Manual timer off', **la)
+
+                except Exception as e:  # TODO: Narrowise the catch, it's too wide...
+                    pass  # Till any action avaialble
+
             else:
                 #######################################################################################
                 ##################      LONG CYCLE ACTIONS, SD-CARD WRITE      ########################
@@ -117,11 +141,11 @@ class Command(BaseCommand):
                 s.hpa = Decimal('{:.1f}'.format(avg(data['hpa'])))
                 s.rh = int(avg(data['rh']))
                 s.lux = int(avg(data['lux']))
-                self.stdout.write(str(s))
+                # self.stdout.write(str(s))
                 try:  # Catch sensor reading data, stay running
                     # Write data to the DB
                     s.save()
-                    self.stdout.write('Sensor Records: ' + repr(Sensors.objects.count()))
+                    # self.stdout.write('Sensor Records: ' + repr(Sensors.objects.count()))
                 except Exception as e:
                     self.stderr.write('On write: %s (%s)' % (e.message, type(e)))
                     time.sleep(60)  # Wait 1 minute before retry.

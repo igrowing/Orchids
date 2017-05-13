@@ -1,3 +1,4 @@
+import re
 import django_tables2 as tables
 from datetime import datetime
 from django.contrib import messages
@@ -89,17 +90,18 @@ def parse_user_input(a, request):
     a.light = request.POST.get("light", False)
     a.heat = request.POST.get("heat", False)
     time = request.POST.get("time", 0)
+    reason = 'Manual'
+    suffix = ''  # Add it to indicate in the DB that timer is engaged. Dirty trick for stateless machine :(
     for k, v in a.iteritems():
         # Don't waste time on non-changes actions
         if v == la[k]:
             continue
 
-        reason = 'Manual'
         if v and time:
             # For ON action:
             # Set 'Manual' reason and Send long-time actions to background timer if time is given.
             # Else Do 0-time actions immediately.
-            controller.set_timer(time)
+            suffix = ' with timer for %s minutes' % time
 
         # For OFF action.
         # Set 'Automate' reason and Turn off actuator if was enabled automatically.
@@ -109,7 +111,7 @@ def parse_user_input(a, request):
             # Stop other actions compare. One overriding action is important and enough
             break
 
-    msg = controller.activate(reason=reason, mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
+    msg = controller.activate(reason=reason + suffix, mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
     if [i for i in ['wrong', 'skip'] if i not in msg.lower()]:
         messages.success(request, "Actions taken: " + msg)
     else:
@@ -133,16 +135,30 @@ def _get_timer_actions_parsed():
     '''Return list of actions and times in format per item:
     ['actuator', 'action', 'remaining_time']
     '''
-    if controller.manual_action_timer:
-        res = []
-        # Get reason just for double check.
-        la = controller.get_last_action()
-        pass_t = (datetime.now() - controller.manual_action_timer[1]).total_seconds()
-        dt = (controller.manual_action_timer[0] * 60 - pass_t) / 60
-        for k, v in la.iteritems():
-            if v:
-                res.append((k.capitalize(), _verb(not v).capitalize(), 'Now' if dt == 0 else _humanize(dt)))
-        return res
+    # Process timer
+    res = []
+    try:
+        # Find last record with Timer enable
+        filt = {'reason__icontains': 'with timer'}
+        qs = models.Actions.objects.filter(**filt).last()
+
+        if 'with timer' in qs.reason.lower():
+            min_l = re.findall('(\d+) min', qs.reason.lower())
+            secs = int(min_l[0]) * 60 if min_l else 0
+            was_on = [k for k, v in qs.get_all_fields().iteritems() if v]
+            if was_on:
+                changed = False
+                # Avoid exception in case of empty database.
+                la = models.Actions.objects.last().get_all_fields()
+                for i in was_on:
+                    if la[i]:  # was on and still on
+                        dt = (secs - (datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds()) / 60
+                        res.append((i.capitalize(), _verb(not la[i]).capitalize(), 'Now' if dt == 0 else _humanize(dt)))
+
+    except Exception as e:  # TODO: Narrowise the catch, it's too wide...
+        pass  # Till any action avaialble
+
+    return res
 
 
 def action_list(request):

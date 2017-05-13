@@ -1,4 +1,3 @@
-import re
 import sys
 import time
 import copy
@@ -16,30 +15,6 @@ NO_DATA = -1
 # Global variables:
 #  Minimize page loading time.
 current_state = []
-#  Keep a list for timer [how_long_minutes, start_datetime]
-manual_action_timer = []
-
-# state_name = {'action_name': [off_period_min, on_period_min, exclusion], ...}
-#emergency_low = {'water': [20130, 30], 'mist': [,], 'vent': [,], 'ac': [,], 'heat': [,], 'shade': [,], 'fertilize': [,]}
-act_dict = {
-    't0h0w0': {'heat': [60, 0]},
-    't6h0w0': {'mist': [60, 10200]},  # Mist for 1 hour in a week.
-    't6h40w0': {'water': [30, 20130]},  # Water for 30 min in 2 weeks.
-    't6h80w0': {'water': [15, 20145]},  # Water for 15 min in 2 weeks.
-    't17h0w0': {'water': [30, 10230], 'mist': [60, 2820]},  # Water for 30 min in 1 week. Mist for 1 hour every 2 days.
-    't17h40w0': {'water': [15, 10245]},  # Water for 30 min in 1 week.
-    't25h0w0': {'water': [30, 10230], 'mix': {'mist': 30, 'vent': 60, 'off': 1350}},  # Water for 30 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with vent for 1 hour.
-    't25h0w5': {'water': [30, 10230], 'mist': [30, 1410]},  # Water for 30 min in 1 week. Mist for 30 minutes every day.
-    't25h40w0': {'water': [30, 10230], 'mix': {'mist': 5, 'vent': 60, 'off': 1375}},  # Water for 30 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with vent for 1 hour.
-    't25h40w5': {'water': [30, 10230], 'mist': [5, 1435]},  # Water for 30 min in 1 week. Mist for 5 minutes every day.
-    't25h80w0': {'water': [30, 10230], 'vent': [60, 1380]},  # Water for 30 min in 1 week. Vent for 1 hour at the most light and no wind.
-    't25h80w5': {'water': [30, 10230]},  # Water for 30 min in 1 week.
-    't28h0w0': {'water': [30, 10230], 'mix': {'mist': 30, 'vent': 60, 'off': 30}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with vent for 1 hour.
-    't28h0w5': {'water': [30, 10230], 'mist': [30, 90]},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light.
-    't28h80w0': {'water': [30, 10230], 'vent': [30, 90]},  # Water for 30 min in 1 week. Vent for 30 minutes at the most light and no wind.
-    't28h80w5': {'water': [30, 10230]},  # Water for 30 min in 1 week.
-    't36h0w0': {'mix': {'mist': 30, 'vent': 30}, 'ac': [60, 0], 'shade': [400, 0]}, # When t_amb > 36 or t_obj > 25
-}
 
 # Primitive action description:
 # 'water', dripping watering. can be on/off.
@@ -272,8 +247,12 @@ def calc_avg(duration):
             ed[k] += v
 
     # Calc the avg
+    try:
+        count = ml.count()
+    except:
+        count = ml.count
     for k, v in ed.iteritems():
-        ed[k] = ed[k] / ml.count()
+        ed[k] = ed[k] / count
 
     return ed
 
