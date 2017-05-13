@@ -10,7 +10,7 @@ background: -moz-radial-gradient(center, ellipse cover, rgba(248,255,232,1) 0%, 
 background: -webkit-radial-gradient(center, ellipse cover, rgba(248,255,232,1) 0%,rgba(227,245,171,1) 33%,rgba(183,223,45,1) 100%);
 background: radial-gradient(ellipse at center, rgba(248,255,232,1) 0%,rgba(227,245,171,1) 33%,rgba(183,223,45,1) 100%);
 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f8ffe8', endColorstr='#b7df2d',GradientType=1 );
-	}
+}
 	<!--table
 	   {mso-displayed-decimal-separator:"\.";
 	   mso-displayed-thousand-separator:"\,";}
@@ -288,13 +288,22 @@ function validate() {
             </td><td>
             </td><td valign="top">
             {% if actionList %}
-                <h4>Next actions</h4>
-                <table summary="Next actions">
+                <h4>Next actions:</h4><p>
+                <table summary="Next actions:">
                 <tr><th>What</th><th>When</th><th>Will be</th>
                 {% for a, b, c in actionList %}
                     <tr><td>{{ a }}</td><td>{{ c }}</td><td>{{ b }}</td></tr>
                 {% endfor %}
-                </table>
+                </table></p>
+            {% endif %}
+            {% if timerList %}
+                <hr><h4>Timer actions:</h4><p>
+                <table summary="Timer actions:">
+                <tr><th>What</th><th>When</th><th>Will be</th>
+                {% for a, b, c in timerList %}
+                    <tr><td>{{ a }}</td><td>{{ c }}</td><td>{{ b }}</td></tr>
+                {% endfor %}
+                </table></p>
             {% endif %}
             </td><td>
             </td><td valign="top">

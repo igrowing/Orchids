@@ -1,4 +1,5 @@
 import django_tables2 as tables
+from datetime import datetime
 from django.contrib import messages
 from django.shortcuts import render
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -37,20 +38,12 @@ class ActionTable(tables.Table):
 def list(request):
     # Use auto_id for further form changes
     form = ActionsForm(request.POST or None, auto_id=True)
+    # Get actions template
     a = controller.get_last_action()
+
     if request.method == "POST":
         if form.is_valid():
-            a.mist = request.POST.get("mist", False)
-            a.water = request.POST.get("water", False)
-            a.fan = request.POST.get("fan", False)
-            a.light = request.POST.get("light", False)
-            a.heat = request.POST.get("heat", False)
-
-            msg = controller.activate(reason='Manual', mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
-            if [i for i in ['wrong', 'skip'] if i not in msg.lower()]:
-                messages.success(request, "Actions taken: " + msg)
-            else:
-                messages.error(request, "Actions tried: " + msg)
+            a = parse_user_input(a, request)
 
     for k, v in a.iteritems():
         a[k] = _verb(v)
@@ -79,12 +72,56 @@ def list(request):
         statuses[i] = True
 
     al = _get_next_actions_parsed()
+    tl = _get_timer_actions_parsed()
 
     return render(request, 'orchid_app/sensor_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table,
-                                                           'actuators': a, 'statuses': statuses, 'actionList': al})
+                                                           'actuators': a, 'statuses': statuses, 'actionList': al,
+                                                           'timerList': tl,
+                                                          })
+
+
+def parse_user_input(a, request):
+    # Keep a copy for compare
+    la = controller.get_last_action()
+    a.mist = request.POST.get("mist", False)
+    a.water = request.POST.get("water", False)
+    a.fan = request.POST.get("fan", False)
+    a.light = request.POST.get("light", False)
+    a.heat = request.POST.get("heat", False)
+    time = request.POST.get("time", 0)
+    for k, v in a.iteritems():
+        # Don't waste time on non-changes actions
+        if v == la[k]:
+            continue
+
+        reason = 'Manual'
+        if v and time:
+            # For ON action:
+            # Set 'Manual' reason and Send long-time actions to background timer if time is given.
+            # Else Do 0-time actions immediately.
+            controller.set_timer(time)
+
+        # For OFF action.
+        # Set 'Automate' reason and Turn off actuator if was enabled automatically.
+        # Else Set 'Manual' reason and Turn off actuator.
+        if controller.is_enabled(automate=True, actuator=k):
+            reason = 'Automate overridden by user'
+            # Stop other actions compare. One overriding action is important and enough
+            break
+
+    msg = controller.activate(reason=reason, mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
+    if [i for i in ['wrong', 'skip'] if i not in msg.lower()]:
+        messages.success(request, "Actions taken: " + msg)
+    else:
+        messages.error(request, "Actions tried: " + msg)
+
+    return a
 
 
 def _get_next_actions_parsed():
+    '''Return list of actions and times in format per item:
+    ['actuator', 'action', 'remaining_time']
+    '''
     al = controller.get_next_action()
     if al:
         for i in range(len(al)):
@@ -92,22 +129,28 @@ def _get_next_actions_parsed():
     return al
 
 
+def _get_timer_actions_parsed():
+    '''Return list of actions and times in format per item:
+    ['actuator', 'action', 'remaining_time']
+    '''
+    if controller.manual_action_timer:
+        res = []
+        # Get reason just for double check.
+        la = controller.get_last_action()
+        pass_t = (datetime.now() - controller.manual_action_timer[1]).total_seconds()
+        dt = (controller.manual_action_timer[0] * 60 - pass_t) / 60
+        for k, v in la.iteritems():
+            if v:
+                res.append((k.capitalize(), _verb(not v).capitalize(), 'Now' if dt == 0 else _humanize(dt)))
+        return res
+
+
 def action_list(request):
     form = ActionsForm(request.POST or None)
     a = controller.get_last_action()
     if request.method == "POST":
         if form.is_valid():
-            a.mist = request.POST.get("mist", False)
-            a.water = request.POST.get("water", False)
-            a.fan = request.POST.get("fan", False)
-            a.light = request.POST.get("light", False)
-            a.heat = request.POST.get("heat", False)
-
-            msg = controller.activate(reason='Manual', mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
-            if [i for i in ['wrong', 'skip'] if i not in msg.lower()]:
-                messages.success(request, "Actions taken: " + msg)
-            else:
-                messages.error(request, "Actions tried: " + msg)
+            a = parse_user_input(a, request)
 
     # Standartize/verbose actuator form values.
     for k, v in a.iteritems():
@@ -137,9 +180,12 @@ def action_list(request):
         statuses[i] = True
 
     al = _get_next_actions_parsed()
+    tl = _get_timer_actions_parsed()
 
     return render(request, 'orchid_app/action_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table,
-                                                           'actuators': a, 'statuses': statuses, 'actionList': al})
+                                                           'actuators': a, 'statuses': statuses, 'actionList': al,
+                                                           'timerList': tl,
+                                                           })
 
 
 def sysinfo_list(request):

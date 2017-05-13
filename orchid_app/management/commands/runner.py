@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from threading import Thread
 from decimal import Decimal
 
@@ -47,6 +47,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
+        #######################################################################################
+        ##################                 PREPARATIONS                ########################
+        #######################################################################################
+
         os.system('logger orchid_runner has started')
         # Shut down on system start/restart everything could be open.
         controller.activate(reason='System startup', force=True, mist=False, drip=False, fan=False, light=False, heat=False)
@@ -64,8 +68,15 @@ class Command(BaseCommand):
         data = {'wind': [], 'water': 0.0, 't_amb': [], 't_obj': [], 'hpa': [], 'rh': [], 'lux': []}
         ts = time.time()
 
+        #######################################################################################
+        ##################                   MAIN LOOP                 ########################
+        #######################################################################################
+
         while True:
             if time.time() - ts < POLL_PERIOD:
+                #######################################################################################
+                ##################     SHORT CYCLE ACTIONS, DATA AVERAGING     ########################
+                #######################################################################################
                 try:  # Catch sensor reading data, stay running
                     # Wait for MQTT data
                     topic = "shm/orchid/wind/last_min"
@@ -84,7 +95,17 @@ class Command(BaseCommand):
                 except Exception as e:
                     self.stderr.write('On read: %s (%s)' % (e.message, type(e)))
                     time.sleep(60)  # Wait 1 minute before retry.
+
+                # Process timer
+                if controller.manual_action_timer and (datetime.now() - controller.manual_action_timer[1]).total_seconds() > controller.manual_action_timer[0] * 60:
+                    self.stdout.write('Timer ended: %s' % datetime.now())
+                    self.stdout.flush()
+                    controller.activate(reason='Manual timer off', mist=False, drip=False, fan=False, light=False, heat=False)
+                    controller.manual_action_timer = []
             else:
+                #######################################################################################
+                ##################      LONG CYCLE ACTIONS, SD-CARD WRITE      ########################
+                #######################################################################################
                 n = datetime.now()
                 s = Sensors()
                 s.date = n.replace(minute=n.minute / POLL_PERIOD_MIN * POLL_PERIOD_MIN, second=0, microsecond=0)  # reduce to poll period resolution

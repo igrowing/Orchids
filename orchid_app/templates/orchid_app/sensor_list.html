@@ -288,13 +288,22 @@ function validate() {
             </td><td>
             </td><td valign="top">
             {% if actionList %}
-                <h4>Next actions</h4>
-                <table summary="Next actions">
+                <h4>Next actions:</h4><p>
+                <table summary="Next actions:">
                 <tr><th>What</th><th>When</th><th>Will be</th>
                 {% for a, b, c in actionList %}
                     <tr><td>{{ a }}</td><td>{{ c }}</td><td>{{ b }}</td></tr>
                 {% endfor %}
-                </table>
+                </table></p>
+            {% endif %}
+            {% if timerList %}
+                <hr><h4>Timer actions:</h4><p>
+                <table summary="Timer actions:">
+                <tr><th>What</th><th>When</th><th>Will be</th>
+                {% for a, b, c in timerList %}
+                    <tr><td>{{ a }}</td><td>{{ c }}</td><td>{{ b }}</td></tr>
+                {% endfor %}
+                </table></p>
             {% endif %}
             </td><td>
             </td><td valign="top">

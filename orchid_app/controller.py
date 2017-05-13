@@ -13,8 +13,11 @@ MIN_AVG_HOURS = 0.4   # TODO: reconsider the value
 MAX_TIMEOUT = 999999  # Very long time indicated no action was found
 NO_DATA = -1
 
-# Global variable to minimize page loading time.
+# Global variables:
+#  Minimize page loading time.
 current_state = []
+#  Keep a list for timer [how_long_minutes, start_datetime]
+manual_action_timer = []
 
 # state_name = {'action_name': [off_period_min, on_period_min, exclusion], ...}
 #emergency_low = {'water': [20130, 30], 'mist': [,], 'vent': [,], 'ac': [,], 'heat': [,], 'shade': [,], 'fertilize': [,]}
@@ -61,49 +64,49 @@ state_list = [
      'action': {'heat': [60, 0]}},
     {'name': 't6h0w0', 'avg': 24,
      'criteria': {'tmin': 6, 'tmax': 17, 'hmin': 0, 'hmax': 40, 'wmin': 0, 'wmax': 100},
-     'action': {'mist': [60, 10200]}},  # Mist for 1 hour in a week.
+     'action': {'mist': [60, 10020]}},  # Mist for 1 hour in a week.
     {'name': 't6h40w0', 'avg': 24,
      'criteria': {'tmin': 6, 'tmax': 17, 'hmin': 40, 'hmax': 80, 'wmin': 0, 'wmax': 100},
-     'action': {'water': [30, 20130]}},  # Water for 30 min in 2 weeks.
+     'action': {'water': [5, 20155]}},  # Water for 5 min in 2 weeks.
     {'name': 't6h80w0', 'avg': 24,
      'criteria': {'tmin': 6, 'tmax': 17, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 100},
-     'action': {'water': [15, 20145]}},  # Water for 15 min in 2 weeks.
+     'action': {'water': [5, 20155]}},  # Water for 5 min in 2 weeks.
     {'name': 't17h0w0', 'avg': 12,
      'criteria': {'tmin': 17, 'tmax': 25, 'hmin': 0, 'hmax': 40, 'wmin': 0, 'wmax': 100},
-     'action': {'water': [30, 10230], 'mist': [60, 2820]}},  # Water for 30 min in 1 week. Mist for 1 hour every 2 days.
+     'action': {'water': [5, 10075], 'mist': [60, 2820]}},  # Water for 5 min in 1 week. Mist for 1 hour every 2 days.
     {'name': 't17h40w0', 'avg': 12,
      'criteria': {'tmin': 17, 'tmax': 25, 'hmin': 40, 'hmax': 100.1, 'wmin': 0, 'wmax': 100},
-     'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
+     'action': {'water': [5, 10075]}},  # Water for 5 min in 1 week.
     {'name': 't25h0w0', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 0, 'wmax': 2},
-     'action': {'water': [30, 10230], 'mix': {'mist': [30, 1410], 'fan': [60, 1380]}}},  # Water for 30 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with fan for 1 hour.
+     'action': {'water': [5, 10075], 'mix': {'mist': [30, 1410], 'fan': [60, 1380]}}},  # Water for 5 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with fan for 1 hour.
     {'name': 't25h0w2', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 2, 'wmax': 100},
-     'action': {'water': [30, 10230], 'mist': [30, 1410]}},  # Water for 30 min in 1 week. Mist for 30 minutes every day.
+     'action': {'water': [5, 10075], 'mist': [30, 1410]}},  # Water for 30 min in 1 week. Mist for 30 minutes every day.
     {'name': 't25h40w0', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 0, 'wmax': 2},
-     'action': {'water': [30, 10230], 'mix': {'mist': [5, 1435], 'fan': [60, 1380]}}},  # Water for 30 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with fan for 1 hour.
+     'action': {'water': [5, 10075], 'mix': {'mist': [5, 1435], 'fan': [60, 1380]}}},  # Water for 5 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with fan for 1 hour.
     {'name': 't25h40w2', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 2, 'wmax': 100},
-     'action': {'water': [30, 10230], 'mist': [5, 1435]}},  # Water for 30 min in 1 week. Mist for 5 minutes every day.
+     'action': {'water': [5, 10075], 'mist': [5, 1435]}},  # Water for 5 min in 1 week. Mist for 5 minutes every day.
     {'name': 't25h80w0', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 2},
-     'action': {'water': [30, 10230], 'fan': [60, 1380]}},  # Water for 30 min in 1 week. fan for 1 hour at the most light and no wind.
+     'action': {'water': [5, 10075], 'fan': [60, 1380]}},  # Water for 5 min in 1 week. fan for 1 hour at the most light and no wind.
     {'name': 't25h80w2', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100.1, 'wmin': 2, 'wmax': 100},
-     'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
+     'action': {'water': [5, 10075]}},  # Water for 5 min in 1 week.
     {'name': 't28h0w0', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 0, 'wmax': 2},
-     'action': {'water': [30, 10230], 'mix': {'mist': [30, 90], 'fan': [60, 60]}}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with fan for 1 hour.
+     'action': {'water': [7, 10073], 'mix': {'mist': [30, 90], 'fan': [60, 60]}}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with fan for 1 hour.
     {'name': 't28h0w2', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 2, 'wmax': 100},
-     'action': {'water': [30, 10230], 'mist': [30, 90]}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light.
+     'action': {'water': [7, 10073], 'mist': [30, 90]}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light.
     {'name': 't28h80w0', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 2},
-     'action': {'water': [30, 10230], 'fan': [30, 90]}},  # Water for 30 min in 1 week. fan for 30 minutes at the most light and no wind.
+     'action': {'water': [7, 10073], 'fan': [30, 90]}},  # Water for 30 min in 1 week. fan for 30 minutes at the most light and no wind.
     {'name': 't28h80w2', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100.1, 'wmin': 2, 'wmax': 100},
-     'action': {'water': [30, 10230]}},  # Water for 30 min in 1 week.
+     'action': {'water': [7, 10073]}},  # Water for 30 min in 1 week.
     {'name': 't36h0w0', 'avg': MIN_AVG_HOURS,  # Don't average, emergency state.
      'criteria': {'tmin': 36, 'tmax': 100, 'hmin': 0, 'hmax': 100.1, 'wmin': 0, 'wmax': 100},
      'action': {'mix': {'mist': [30, 30], 'fan': [30, 30]}, 'ac': [60, 0], 'shade': [400, 0]}},  # When t_amb > 36 or t_obj > 25
@@ -167,7 +170,7 @@ def activate(reason='unknown', force=False, **kwargs):
     return ', '.join(msg)
 
 
-def get_last_action():
+def get_last_action(with_reason=False):
     '''
     :return: Dictionary of statuses of all actuators. Does not contain non-actuator data (ID, date, reason)
     '''
@@ -179,6 +182,8 @@ def get_last_action():
         sys.stderr.write('%s -- On start: %s (%s)' % (a, e.message, type(e)))
         return a
 
+    if with_reason:
+        return a.get_all_fields(exclude=('id', 'date'))
     return a.get_all_fields()
 
 
@@ -285,6 +290,16 @@ def act_current_state():
         time.sleep(60 - (time.time() - ts))
 
 
+def set_timer(minutes):
+    global manual_action_timer
+    if type(minutes) is not int:
+        try:
+            minutes = int(minutes)
+        except ValueError:
+            minutes = 1
+    manual_action_timer = [minutes, datetime.now()]
+
+
 def get_next_action():
     '''Get dictionary of actuators in next planned state (on/off).
     Return None if no reasonable data available.
@@ -388,6 +403,27 @@ def _invert_actuator_value_if_was_enough(act_dict, act_name, time_in_state_min):
         ad[act_name] = not ad[act_name]
 
     return ad
+
+
+def is_enabled(actuator, automate=False):
+    '''
+    If automate == True:
+        Returns True if last action to 'actuator' was automatic.
+        Returns False if  last action to 'actuator' was manual.
+    If automate == False:
+        Returns True if last action to 'actuator' was manual.
+        Returns False if  last action to 'actuator' was automatic.
+    :param automate: bool
+    :param actuator: str
+    :return:
+    '''
+    la = get_last_action(with_reason=True)
+    if not la:
+        return False
+    if 'automate' in la.reason.lower():
+        return automate and la[actuator]
+    else:
+        return not automate and la[actuator]
 
 
 def get_last_change_minutes(actuator, is_on):
