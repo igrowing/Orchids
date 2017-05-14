@@ -3,6 +3,14 @@
 <html>
 <head>
 	<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+	<style type="text/css">
+	/* animated spoiler CSS by Bloggersentral.com, modified by iGrowing */
+	.spoilerbutton {display:block;margin:3px 0;}
+	.spoiler {overflow:hidden;}
+	.spoiler > div {-webkit-transition: all 0.4s ease;-moz-transition: margin 0.4s ease;-o-transition: all 0.4s ease;transition: margin 0.4s ease;}
+	.spoilerbutton[name="Show"] + .spoiler > div {margin-top:-100%;}
+	.spoilerbutton[name="Hide"] + .spoiler {padding:5px;} 
+	</style> 
 	<style id="Orchids_care_4027_Styles">
 	body {
 background: rgb(247,251,252);
@@ -307,9 +315,12 @@ function validate() {
             {% endif %}
             </td><td>
             </td><td valign="top">
-            <h4>Manual control</h4>
-            {{ form.as_p }}
-            <input type="submit" value="Ready? Go!">
+            	<h4>Manual control:</h4>
+		<input class="spoilerbutton" type="button" name='Show' value="Give me control!" onclick="this.name=this.name=='Show'?'Hide':'Show';">
+		<div class="spoiler"><div>
+	            {{ form.as_p }}
+            	<input type="submit" value="Ready? Go!">
+		</div></div>
             </td>
         </tr>
     </table>
@@ -319,6 +330,10 @@ function validate() {
 <h3>Showing: Sensors&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="actions/">Show Actions</a><br>
     Total {{total}} records.</h3>
 
+{% if paginator.number == 1 %}
+<input class="spoilerbutton" type="button" name='Show' value="Raw sensors data" onclick="this.name=this.name=='Show'?'Hide':'Show';">
+<div class="spoiler"><div>
+{% endif %}
 {% if table %}
     <div class="pagination">
         <span class="step-links">
@@ -357,6 +372,10 @@ function validate() {
             <a href="?page={{ paginator.paginator.num_pages }}">Last >>|</a>
         </span>
     </div>
+{% if paginator.number == 1 %}
+</div></div>
+{% endif %}
+
 
 {% comment %}
     <ul>
