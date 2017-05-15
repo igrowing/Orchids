@@ -90,6 +90,8 @@ state_list = [
 
 def activate(reason='unknown', force=False, **kwargs):
     '''Control the actuators.
+    Actuator is changed only if it's current state is different from requested.
+    DB is updated only on any actuator change.
 
     @:param kwargs: actuator_name=required_state. Can be boolean or string (on, off, value).
     @:returns string: message what was activated and deactivated.
@@ -97,13 +99,10 @@ def activate(reason='unknown', force=False, **kwargs):
 
     msg = []
     a = models.Actions()
-    a.date = datetime.now()
-    a.reason = reason
-
     la = get_last_action()
 
     for k, v in kwargs.iteritems():
-        if type(v) == unicode:
+        if type(v) == unicode or type(v) == str:
             if v.lower() in ['on', 'true', 'enable', 'start']:
                 v = True
             elif v.lower() in ['off', 'false', 'disable', 'stop']:
@@ -138,9 +137,11 @@ def activate(reason='unknown', force=False, **kwargs):
         sys.stdout.write('Set action %s: %s' % (reason, repr(a)))
         sys.stdout.flush()
         try:
+            a.date = datetime.now()
+            a.reason = reason
             a.save()
         except Exception as e:
-            sys.stderr.write('On start: %s (%s)' % (e.message, type(e)))
+            sys.stderr.write('On DB write: %s (%s)' % (e.message, type(e)))
     else:
         msg.append('No changes. Skip action')
 
@@ -190,8 +191,8 @@ def read_current_state():
     status = calc_avg(MIN_AVG_HOURS)
     flag = False
 
-    for i in range(len(state_list)):
-        duration = state_list[i]['avg']
+    for state in reversed(state_list):
+        duration = state['avg']
         # Skip repeating status calculation
         if status['duration'] != duration:
             status = calc_avg(duration)
@@ -201,10 +202,10 @@ def read_current_state():
         if len(status.keys()) <= 2:
             return
 
-        cr = state_list[i]['criteria']
+        cr = state['criteria']
         if cr['tmin'] <= status['t_amb'] < cr['tmax'] and cr['hmin'] <= status['rh'] < cr['hmax'] and cr['wmin'] <= status['wind'] < cr['wmax']:
             global current_state
-            current_state = (state_list[i], i, datetime.now())
+            current_state = (state, state_list.index(state), datetime.now())
             flag = True
             break
 
@@ -217,11 +218,11 @@ def read_current_state():
         if len(status.keys()) <= 2:
             return
 
-        for i in range(len(state_list)):
-            cr = state_list[i]['criteria']
+        for state in reversed(state_list):
+            cr = state['criteria']
             if cr['tmin'] <= status['t_amb'] < cr['tmax'] and cr['hmin'] <= status['rh'] < cr['hmax'] and cr['wmin'] <= status['wind'] < cr['wmax']:
                 global current_state
-                current_state = (state_list[i], i, datetime.now())
+                current_state = (state, state_list.index(state), datetime.now())
                 break
 
     # sys.stdout.write('Read status: %s' % repr(current_state))
