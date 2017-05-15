@@ -1,4 +1,5 @@
 import re
+import os
 import django_tables2 as tables
 from datetime import datetime
 from django.contrib import messages
@@ -208,8 +209,13 @@ def sysinfo_list(request):
     form = SystemForm(request.POST or None)
     if request.method == "POST":
         if form.is_valid():
-            # TODO: Add FW refresh procedure
-            pass
+            if 'update' in request.POST:
+                print 'User requested the firmware update.'
+                # TODO: Add FW refresh procedure
+            elif 'restart' in request.POST:
+                print 'user requested runner restart.'
+                os.system('sudo service orchid_runner restart')
+                print 'user requested runner restart, completed.'
 
     si = sysinfo.get_sysinfo_html()
 

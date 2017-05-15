@@ -16,7 +16,7 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fffcfe', end
 </head>
 <body>
 <center>
-<table width="80%"><tr>
+<table width="60%"><tr>
 <td><h1><font color="#ff33cc">&#10046;</font> Orchids <font color="#cc99ff">&#10046;</font></h1></td><td align="right"><a href="/">Show Sensors</a><br>
 <a href="/actions/">Show Actions</a></td>
 </tr></table>
@@ -35,11 +35,16 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fffcfe', end
 <hr>
 {% endif %}
 <p>
-<form action="" method="post">{% csrf_token %}
-
- <label for="update"><input type="checkbox" name="update" value="True" id="update" hidden='True'> </label><br>
-<input type="submit" value="Update Firmware">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<input type="submit" value="Restart Runner">
+<form action="" method="post" onsubmit="return validate();"> {% csrf_token %}
+<script>
+function validate() {
+  // Pop up user confirmation
+  return confirm('This action may stop functioning of the Orchid farm.\n\nAre you sure?');
+}
+</script>
+<br>
+<input type="submit" name="update" value="Update Firmware">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="submit" name="restart" value="Restart Runner">
 </form>
 <br><a target="_blank" href="http://github.com/igrowing/orchids/wiki">How does this work</a> &copy; <a target="_blank" href="http://github.com/igrowing">iGrowing</a>
 <br></center></p>
