@@ -29,6 +29,7 @@ MAX_FLOW_RATE = 2.5  # L/minute.  This is threshold for emergency water leakage 
 MAX_LEAK_RATE = 0.008
 MAX_SEND_COUNT = POLL_PERIOD / 10  # Send leakage message once in hour
 send_counter = 0
+water_trigger = False
 
 def avg(l):
     '''Convert values of list from str to float if needed. Return average of the collected values.'''
@@ -168,10 +169,9 @@ def check_water_flow(liters):
     # Take emergency actions
     # Find out which valve is open
     la = controller.get_last_action()
-    if la.mist or la.water:
-        if liters > MAX_FLOW_RATE:
+    if la.mist or la.water and liters > MAX_FLOW_RATE:
             # Try to shut open valve off
-            controller.activate(reason='Emergency shut off', force=True, mist=False, drip=False,
+            controller.activate(reason='Emergency shut off', force=True, mist=False, water=False,
                                 fan=la.fan, light=la.light, heat=la.heat)
 
             # Build emergency message
@@ -186,23 +186,26 @@ def check_water_flow(liters):
 
     # Check leakage when all valves closed
     elif liters > MAX_LEAK_RATE:
-        global send_counter
-        if send_counter == 0:
-            # Try to shut open valve off
-            controller.activate(reason='Emergency shut off', force=True, mist=False, drip=False,
-                                fan=la.fan, light=la.light, heat=la.heat)
+        global water_trigger
+        if water_trigger:
+            global send_counter
+            if send_counter == 0:
+                # Try to shut open valve off
+                controller.activate(reason='Emergency shut off', force=True, mist=False, water=False,
+                                    fan=la.fan, light=la.light, heat=la.heat)
 
-            # Build emergency message
-            msg = 'Water leakage is detected while all valves should be closed.'\
-                  '\n%s liters of water leaked in last minute when should be 0.\n' \
-                  'Tried to close all valves. This may impact watering and/or temperature conditions.\n' \
-                  'Take actions immediately.' % str(round(liters, 3))
-            subj = 'Orchid farm emergency: water leakage detected'
-            controller.send_message(subj, msg)
-            send_counter += 1
-        else:
-            if send_counter < MAX_SEND_COUNT:
+                # Build emergency message
+                msg = 'Water leakage is detected while all valves should be closed.'\
+                      '\n%s liters of water leaked in last minute when should be 0.\n' \
+                      'Tried to close all valves. This may impact watering and/or temperature conditions.\n' \
+                      'Take actions immediately.' % str(round(liters, 3))
+                subj = 'Orchid farm emergency: water leakage detected'
+                controller.send_message(subj, msg)
+                send_counter += 1
+                water_trigger = False
+            elif send_counter < MAX_SEND_COUNT:
                 send_counter += 1
             else:
                 send_counter = 0
-
+        else:
+            water_trigger = True
