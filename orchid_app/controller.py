@@ -184,7 +184,9 @@ def get_current_state():
 
 def read_current_state():
     '''Calculate averages for all possible states. Choose the most appropriate state.
-    Return status as full record of state_list and its index.
+    Update current_state status as full record of state_list and its index.
+    Return True if algorithm worked as standard.
+    Return False if recovery procedure used or no state received.
     '''
 
     # Read first the status with minimal averaging to catch emergency state (lowest and highest temperatures).
@@ -200,7 +202,7 @@ def read_current_state():
 
         # Abort current_state update if no meaningful data in the DB.
         if len(status.keys()) <= 2:
-            return
+            return flag
 
         cr = state['criteria']
         if cr['tmin'] <= status['t_amb'] < cr['tmax'] and cr['hmin'] <= status['rh'] < cr['hmax'] and cr['wmin'] <= status['wind'] < cr['wmax']:
@@ -216,7 +218,7 @@ def read_current_state():
         status = calc_avg(2)
         # Abort current_state update if no meaningful data in the DB.
         if len(status.keys()) <= 2:
-            return
+            return flag
 
         for state in reversed(state_list):
             cr = state['criteria']
@@ -226,6 +228,7 @@ def read_current_state():
                 break
 
     # sys.stdout.write('Read status: %s' % repr(current_state))
+    return flag
 
 
 def calc_avg(duration):
@@ -246,15 +249,19 @@ def calc_avg(duration):
             return ed
 
     # Sum all values for each parameter.
+    count = 0
     for d in ml:
+        count += 1
         for k, v in d.iteritems():
             ed[k] += v
 
+    # Return empty dict if somehow (how?) no items were counted.
+    if count == 0:
+        ed = defaultdict(int)  # Allow automatic adding of key is the key is not present in the dict.
+        ed['duration'] = duration
+        return ed
+
     # Calc the avg
-    try:
-        count = ml.count()
-    except:
-        count = ml.count
     for k, v in ed.iteritems():
         ed[k] = ed[k] / count
 
