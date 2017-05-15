@@ -15,25 +15,34 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fffcfe', end
 	<title>&#10046; Orchids - always alive</title>
 </head>
 <body>
-<table width="97%"><tr>
-<td><h1>&#10046; Orchids &#10046;</h1></td><td align="right"><a href="/">Show Sensors</a><br>
+<center>
+<table width="80%"><tr>
+<td><h1><font color="#ff33cc">&#10046;</font> Orchids <font color="#cc99ff">&#10046;</font></h1></td><td align="right"><a href="/">Show Sensors</a><br>
 <a href="/actions/">Show Actions</a></td>
 </tr></table>
 <hr>
 {% if sysinfo %}
+<h2 align="center">System Information</h2>
 <p>
-{{ sysinfo |safe }}
+{{ sysinfo|safe }}
 </p>
+    {% if charts %}
+    <h2>System Infographics</h2>
+    <p>
+    {{ charts|safe }}
+    </p>
+    {% endif %}
 <hr>
 {% endif %}
-
+<p>
 <form action="" method="post">{% csrf_token %}
 
  <label for="update"><input type="checkbox" name="update" value="True" id="update" hidden='True'> </label><br>
-<input type="submit" value="Update Firmware">
+<input type="submit" value="Update Firmware">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="submit" value="Restart Runner">
 </form>
-
-
+<br><a target="_blank" href="http://github.com/igrowing/orchids/wiki">How does this work</a> &copy; <a target="_blank" href="http://github.com/igrowing">iGrowing</a>
+<br></center></p>
 {% comment %}
     <ul>
         {% for object in table %}

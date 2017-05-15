@@ -5,12 +5,12 @@
 	<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
 	<style type="text/css">
 	/* animated spoiler CSS by Bloggersentral.com, modified by iGrowing */
-	.spoilerbutton {display:block;margin:3px 0;}
+	.spoilerbutton {display:inline;margin:3px 0;}
 	.spoiler {overflow:hidden;}
 	.spoiler > div {-webkit-transition: all 0.4s ease;-moz-transition: margin 0.4s ease;-o-transition: all 0.4s ease;transition: margin 0.4s ease;}
 	.spoilerbutton[name="Show"] + .spoiler > div {margin-top:-100%;}
-	.spoilerbutton[name="Hide"] + .spoiler {padding:5px;} 
-	</style> 
+	.spoilerbutton[name="Hide"] + .spoiler {padding:5px;}
+	</style>
 	<style id="Orchids_care_4027_Styles">
 	body {
 background: rgb(247,251,252);
@@ -177,11 +177,14 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f7fbfc', end
 	<title>&#10046; Orchids - always alive</title>
 </head>
 <body>
-<table width="97%"><tr>
-<td><h1>&#10046; Orchids &#10046;</h1></td><td align="right"><a href="/sysinfo/">System Information</a></td>
+<center>
+<table width="80%"><tr>
+<td><h1><font color="#ff33cc">&#10046;</font> Orchids <font color="#cc99ff">&#10046;</font></h1></td>
+    <td align="right"><a href="/sysinfo/">System Information</a></td>
 </tr></table>
 <hr>
-	<div align="left" id="Orchids_care_4027">
+	<div align="center" id="Orchids_care_4027">
+        <h2>Status panel</h2>
 		<table border="0" cellpadding="0" cellspacing="0" style='border-collapse:collapse;width:500pt'>
 			<col>
 			<col class="xl714027" style='mso-width-source:userset; mso-width-alt:2304;'>
@@ -244,6 +247,7 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f7fbfc', end
 	</div>
 
 <hr>
+    <h2>Control panel</h2>
 <form action="" method="post" onsubmit="return validate();"> {% csrf_token %}
 <script>
 function validate() {
@@ -262,7 +266,6 @@ function validate() {
   // Return null (means true) if no checkboxes checked or time > 0.
 }
 </script>
-
 {% if messages %}
 <ul class="messages">
     {% for message in messages %}
@@ -284,19 +287,19 @@ function validate() {
   <label for="light"><input type="checkbox" name="actions" value="light" id="light"> Light</label><br>
   <label for="heat"><input type="checkbox" name="actions" value="heat" id="heat"> Heat</label><br>
 -->
-    <table width="800">
+    <table width="900">
         <tr>
             <td valign="top">
-                <h4>Actuators are:</h4>
+                <b>Actuators are:</b>
                 {% for key, value in actuators.items %}
                     <p><li>
                         {{key}}: {{ value }}
                     </li></p>
                 {% endfor %}
-            </td><td>
+            </td> <td>
             </td><td valign="top">
             {% if actionList %}
-                <h4>Next actions:</h4><p>
+                <b>Next actions:</b><p>
                 <table summary="Next actions:">
                 <tr><th>What</th><th>When</th><th>Will be</th>
                 {% for a, b, c in actionList %}
@@ -313,22 +316,24 @@ function validate() {
                 {% endfor %}
                 </table></p>
             {% endif %}
-            </td><td>
+            </td> <td>
             </td><td valign="top">
-            	<h4>Manual control:</h4>
-		<input class="spoilerbutton" type="button" name='Show' value="Give me control!" onclick="this.name=this.name=='Show'?'Hide':'Show';">
+            <b>Manual control: <input class="spoilerbutton" type="button" name='Show' value="Give me control!" onclick="this.name=this.name=='Show'?'Hide':'Show';">
 		<div class="spoiler"><div>
 	            {{ form.as_p }}
             	<input type="submit" value="Ready? Go!">
-		</div></div>
+		</div></div></b>
             </td>
         </tr>
     </table>
 </form>
 
 <hr>
-<h3>Showing: Sensors&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="actions/">Show Actions</a><br>
-    Total {{total}} records.</h3>
+<h2>Data panel</h2>
+<h3><table width="30%"><tr><td>
+Showing: Sensors</td><td align="right"><a href="actions/">Show Actions</a></td></tr>
+<tr><td>Total {{total}} records.</td><td> </td></tr></table>
+</h3>
 
 {% if paginator.number == 1 %}
 <input class="spoilerbutton" type="button" name='Show' value="Raw sensors data" onclick="this.name=this.name=='Show'?'Hide':'Show';">
@@ -375,8 +380,8 @@ function validate() {
 {% if paginator.number == 1 %}
 </div></div>
 {% endif %}
-
-
+<br><a target="_blank" href="http://github.com/igrowing/orchids/wiki">How does this work</a> &copy; <a target="_blank" href="http://github.com/igrowing">iGrowing</a>
+<br></center>
 {% comment %}
     <ul>
         {% for object in table %}
@@ -389,6 +394,5 @@ function validate() {
 {% else %}
     <p>No polls are available.</p>
 {% endif %}
-
 </body>
 </html>
