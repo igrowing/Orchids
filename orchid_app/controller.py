@@ -134,6 +134,9 @@ def activate(reason='unknown', force=False, **kwargs):
             msg[-1] += "<<--Wrong action!"
 
     if not a.equals(la) or force:
+        print reason, "Action", a
+        sys.stdout.write('Set action %s: %s' % (reason, repr(a)))
+        sys.stdout.flush()
         try:
             a.save()
         except Exception as e:
@@ -360,10 +363,7 @@ def _run_state_action():
         else:  # Skip non-implemented actuators
             pass
 
-    print "Action", la
-    # sys.stdout.write('Set automatic action for state %s: %s' % (act_name, repr(la)))
-    # sys.stdout.flush()
-    # activate(reason='Automate for state: %s' % act_name, **la)
+    activate(reason='Automate for state: %s' % act_name, **la)
 
 
 def _invert_actuator_value_if_was_enough(act_dict, act_name, time_in_state_min):
