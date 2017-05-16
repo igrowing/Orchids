@@ -36,6 +36,9 @@ class Sensors(models.Model):
     def get_all_fields(self, exclude=('id', 'date')):
         return get_all_fields(self, exclude=exclude)
 
+    def get_diff(self, action):
+        return get_diff(self.get_all_fields(), action)
+
 
 @python_2_unicode_compatible
 class Actions(models.Model):
@@ -64,6 +67,9 @@ class Actions(models.Model):
     def get_all_fields(self, exclude=('id', 'date', 'reason')):
         return get_all_fields(self, exclude=exclude)
 
+    def get_diff(self, action):
+        return get_diff(self.get_all_fields(), action)
+
 
 def get_all_fields(obj, exclude=[]):
     '''Returns a Dict of all field names and values.
@@ -90,4 +96,23 @@ def get_all_fields(obj, exclude=[]):
 
     return fields
 
+
+def get_diff(obj, comp):
+    '''Returns a Dict of fields which are different with compared object.
+    The Dict includes keys of different fields with values of tested object (self).
+    This gives also answer what value per key was in compared object.
+    '''
+
+    if not comp:
+        return obj
+
+    fields = utils.Dict()
+    for k, v in obj.iteritems():
+        try:
+            if v != comp[k]:
+                fields[k] = v
+        except KeyError:
+            fields[k] = v
+
+    return fields
 

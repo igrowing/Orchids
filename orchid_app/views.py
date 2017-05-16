@@ -104,13 +104,13 @@ def parse_user_input(a, request):
             # Else Do 0-time actions immediately.
             suffix = ' with timer for %s minutes' % time
 
-        # For OFF action.
-        # Set 'Automate' reason and Turn off actuator if was enabled automatically.
-        # Else Set 'Manual' reason and Turn off actuator.
-        if controller.is_enabled(automate=True, actuator=k):
-            reason = 'Automate overridden by user'
-            # Stop other actions compare. One overriding action is important and enough
-            break
+        # # For OFF action.
+        # # Set 'Automate' reason and Turn off actuator if was enabled automatically.
+        # # Else Set 'Manual' reason and Turn off actuator.
+        # if controller.is_enabled(automate=True, actuator=k):
+        #     reason = 'Automate overridden by user'
+        #     # Stop other actions compare. One overriding action is important and enough
+        #     break
 
     msg = controller.activate(reason=reason + suffix, mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
     if [i for i in ['wrong', 'skip'] if i not in msg.lower()]:
@@ -148,16 +148,15 @@ def _get_timer_actions_parsed():
             secs = int(min_l[0]) * 60 if min_l else 0
             was_on = [k for k, v in qs.get_all_fields().iteritems() if v]
             if was_on:
-                changed = False
                 # Avoid exception in case of empty database.
                 la = models.Actions.objects.last().get_all_fields()
                 for i in was_on:
                     if la[i]:  # was on and still on
-                        dt = (secs - (datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds()) / 60
-                        res.append((i.capitalize(), _verb(not la[i]).capitalize(), 'Now' if dt == 0 else _humanize(dt)))
+                        dt = secs - (datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds()
+                        res.append((i.capitalize(), _verb(not la[i]).capitalize(), 'Now' if dt == 0 else _humanize(dt, with_secs=True)))
 
-    except Exception as e:  # TODO: Narrowise the catch, it's too wide...
-        pass  # Till any action avaialble
+    except KeyError as e:
+        print 'Error DB query, looking for timer', repr(e)  # Till any action available
 
     return res
 
@@ -226,15 +225,22 @@ def _verb(b):
     '''Convert boolean into verbal off/on.'''
     return ['off', 'on'][b] if type(b) == bool else b
 
-def _humanize(fl):
-    '''Convert minutes into human readable string.'''
+
+def _humanize(fl, with_secs=False):
+    '''Convert minutes or seconds into human readable string.'''
 
     fl = int(fl)
+    if with_secs:
+        s = fl % 60
+        fl /= 60
+    else:
+        s = ''
     m = fl % 1440 % 60
     h = fl % 1440 / 60
     d = fl / 1440
     res = (str(d) + 'd') if d else ''
     res += (str(h) + 'h') if h else ''
     res += (str(m) + 'm') if m else ''
+    res += (str(s) + 's') if s else ''
     return res if res else 0
 
