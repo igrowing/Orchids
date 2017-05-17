@@ -95,7 +95,7 @@ class Command(BaseCommand):
                     data['t_obj'].append(mlx.Melexis().readObject1())
                     data['lux'].append(light.readLight())
                 except Exception as e:
-                    self.stderr.write('On read: %s (%s)' % (e.message, type(e)))
+                    self.stderr.write('On sensors read: %s (%s)' % (e.message, type(e)))
                     time.sleep(60)  # Wait 1 minute before retry.
 
                 # Process timer
@@ -120,11 +120,11 @@ class Command(BaseCommand):
                                         changed = True
 
                                 if changed:
-                                    self.stdout.write('Timer ended: %s' % datetime.now())
-                                    self.stdout.flush()
+                                    # self.stdout.write('Timer ended: %s' % datetime.now())
+                                    # self.stdout.flush()
                                     controller.activate(reason='Manual timer off', **la)
 
-                except Exception as e:  # TODO: Narrowise the catch, it's too wide...
+                except KeyError as e:
                     pass  # Till any action avaialble
 
             else:
@@ -148,14 +148,14 @@ class Command(BaseCommand):
                     s.save()
                     # self.stdout.write('Sensor Records: ' + repr(Sensors.objects.count()))
                 except Exception as e:
-                    self.stderr.write('On write: %s (%s)' % (e.message, type(e)))
+                    self.stderr.write('On DB write: %s (%s)' % (e.message, type(e)))
                     time.sleep(60)  # Wait 1 minute before retry.
                 # Reset the data structure
                 data = {'wind': [], 'water': 0.0, 't_amb': [], 't_obj': [], 'hpa': [], 'rh': [], 'lux': []}
                 ts = time.time()
 
-                # Calculate current state
-                controller.read_current_state()
+                # # Calculate current state
+                # controller.read_current_state()
 
             # Example of catch bad data
             # try:
@@ -169,7 +169,7 @@ def check_water_flow(liters):
     # Take emergency actions
     # Find out which valve is open
     la = controller.get_last_action()
-    if la.mist or la.water and liters > MAX_FLOW_RATE:
+    if (la.mist or la.water) and liters > MAX_FLOW_RATE:
             # Try to shut open valve off
             controller.activate(reason='Emergency shut off', force=True, mist=False, water=False,
                                 fan=la.fan, light=la.light, heat=la.heat)
@@ -185,9 +185,10 @@ def check_water_flow(liters):
             controller.send_message(subj, msg)
 
     # Check leakage when all valves closed
-    elif liters > MAX_LEAK_RATE:
+    elif (not la.mist and not la.water) and liters > MAX_LEAK_RATE:
         global water_trigger
         if water_trigger:
+            # TODO: Add validation of water_trigger time. If was set True long time ago then update time and wait 1 more cycle
             global send_counter
             if send_counter == 0:
                 # Try to shut open valve off
