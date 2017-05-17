@@ -174,12 +174,12 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f8ffe8', end
 	   white-space:nowrap;}
 	-->
 	</style>
-	<title>&#10046; Orchids - always alive</title>
+	<title>&#10046; OrchidCare - always alive</title>
 </head>
 <body>
 <center>
 <table width="60%"><tr>
-<td><h1><font color="#ff33cc">&#10046;</font> Orchids <font color="#cc99ff">&#10046;</font></h1></td>
+<td><h1><font color="#ff33cc">&#10046;</font> OrchidCare <font color="#cc99ff">&#10046;</font></h1></td>
     <td align="right"><a href="/sysinfo/">System Information</a></td>
 </tr></table>
 <hr>
@@ -358,9 +358,9 @@ Showing: Actions</td><td align="right"><a href="/">Show Sensors</a></td></tr>
 
     <div class="pagination">
         <span class="step-links">
-            <a href="actions/?page=1">|<< First</a>&nbsp;&nbsp;
+            <a href="?page=1">|<< First</a>&nbsp;&nbsp;
             {% if paginator.has_previous %}
-                <a href="actions/?page={{ paginator.previous_page_number }}">< Previous</a>&nbsp;&nbsp;
+                <a href="?page={{ paginator.previous_page_number }}">< Previous</a>&nbsp;&nbsp;
             {% endif %}
 
             <span class="current">
@@ -368,9 +368,9 @@ Showing: Actions</td><td align="right"><a href="/">Show Sensors</a></td></tr>
             </span>
 
             {% if paginator.has_next %}
-                <a href="actions/?page={{ paginator.next_page_number }}">Next ></a>&nbsp;&nbsp;
+                <a href="?page={{ paginator.next_page_number }}">Next ></a>&nbsp;&nbsp;
             {% endif %}
-            <a href="actions/?page={{ paginator.paginator.num_pages }}">Last >>|</a>
+            <a href="?page={{ paginator.paginator.num_pages }}">Last >>|</a>
         </span>
     </div>
 <br><hr>

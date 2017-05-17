@@ -98,7 +98,7 @@ def parse_user_input(a, request):
         if v == la[k]:
             continue
 
-        if v and time:
+        if v and int(time) > 0:
             # For ON action:
             # Set 'Manual' reason and Send long-time actions to background timer if time is given.
             # Else Do 0-time actions immediately.
@@ -150,9 +150,10 @@ def _get_timer_actions_parsed():
             if was_on:
                 # Avoid exception in case of empty database.
                 la = models.Actions.objects.last().get_all_fields()
+                print 'was_on', str(was_on), 'secs', str(secs), 'la', repr(la)
                 for i in was_on:
                     if la[i]:  # was on and still on
-                        dt = secs - (datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds()
+                        dt = max(0, secs - (datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds())
                         res.append((i.capitalize(), _verb(not la[i]).capitalize(), 'Now' if dt == 0 else _humanize(dt, with_secs=True)))
 
     except KeyError as e:
