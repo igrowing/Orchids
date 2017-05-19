@@ -19,6 +19,7 @@ import orchid_app.sensors.bme280 as bme
 
 import orchid_app.controller as controller
 from orchid_app.models import Sensors, Actions
+from orchid_app.utils import sysinfo
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -127,6 +128,10 @@ class Command(BaseCommand):
 
                 except KeyError as e:
                     pass  # Till any action available
+
+                t_cpu = sysinfo.read_cpu()['temp']['current']
+                if t_cpu > 90:
+                    os.system('logger orchid_runner, CPU temperature %s' % str(t_cpu))
 
             else:
                 #######################################################################################
