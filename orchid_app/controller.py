@@ -133,12 +133,11 @@ def activate(reason='unknown', force=False, **kwargs):
             msg[-1] += "<<--Wrong action!"
 
     if not a.equals(la) or force:
-        print reason, "Action", a
+        a.date = datetime.now()
+        a.reason = reason
         sys.stdout.write('Set action %s: %s' % (reason, repr(a)))
         sys.stdout.flush()
         try:
-            a.date = datetime.now()
-            a.reason = reason
             a.save()
         except Exception as e:
             sys.stderr.write('On DB write: %s (%s)' % (e.message, type(e)))
@@ -156,14 +155,40 @@ def get_last_action(with_reason=False):
     a = {}
     try:
         # Avoid exception in case of empty database.
-        a = models.Actions.objects.all().last()
-    except Exception as e:  # TODO: Narrowise the catch, it's too wide...
-        sys.stderr.write('%s -- On start: %s (%s)' % (a, e.message, type(e)))
+        a = models.Actions.objects.last()
+    except (exceptions.FieldError, ValueError, KeyError) as e:
+        sys.stderr.write('%s -- On Action DB read: %s (%s)' % (a, e.message, type(e)))
         return a
+
+    if not a:
+        # Simulate empty default last automated action
+        a = models.Actions()
+        a['date'] = datetime(1, 1, 1)
 
     if with_reason:
         return a.get_all_fields(exclude=('id', 'date'))
     return a.get_all_fields()
+
+
+def get_last_automated_action(with_reason=False):
+    a = {}
+    try:
+        # Avoid exception in case of empty database.
+        # Find last record generated automatically
+        filt = {'reason__icontains': 'automate'}
+        a = models.Actions.objects.filter(**filt).last()
+    except (exceptions.FieldError, ValueError, KeyError) as e:
+        sys.stderr.write('Error DB query: %s (%s)' % (e.message, type(e)))
+        return a
+
+    if not a:
+        # Simulate empty default last automated action
+        a = models.Actions()
+        a['date'] = datetime(1, 1, 1)
+
+    if with_reason:
+        return a.get_all_fields(exclude=('id'))
+    return a.get_all_fields(exclude=('id', 'reason'))
 
 
 def get_current_state():
@@ -280,22 +305,15 @@ def act_current_state():
         time.sleep(60 - (time.time() - ts))
 
 
-def set_timer(minutes):
-    global manual_action_timer
-    if type(minutes) is not int:
-        try:
-            minutes = int(minutes)
-        except ValueError:
-            minutes = 1
-    manual_action_timer = [minutes, datetime.now()]
-
-
 def get_next_action():
-    '''Get dictionary of actuators in next planned state (on/off).
+    '''Get list of actuators in next planned state (on/off) in format.
+    ((actuator, time_to_action_in_minutes, action),
+    ...,
+    )
     Return None if no reasonable data available.
     '''
 
-    la = get_last_action()          # Read actuators current status.
+    la = get_last_automated_action()          # Read actuators current status.
     state = get_current_state()[0]  # Take dictionary only. Index doesn't matter.
 
     # Abort calculation if no meaningful data available.
@@ -336,7 +354,6 @@ def _run_state_action():
     I.e. check eligibility of actuator to change state.
     '''
 
-    la = get_last_action()          # Read actuators current status.
     state = get_current_state()[0]  # Take dictionary only. Index doesn't matter.
 
     # Abort calculation if no meaningful data available.
@@ -344,34 +361,16 @@ def _run_state_action():
         return
 
     act_name = state['name']        # Keep name for reporting.
-    actions = state['action']
 
-    # Check if time gone per every single required action in given state
-    for action, params in actions.iteritems():
-        # Mix means: each actuator is enable for given time and disabled for all other times in the same dictionary.
-        # i.e. mix can be split as simple action with predefined *order* of activity.
-        if action in PRIM_ACTIONS:
-            la = _invert_actuator_value_if_was_enough(la, action, params[not la[action]])  # Dirty trick: use true/false as index
-        elif action == 'mix':  # mix action.
-            na = copy.copy(la)
-            for mix_action in MIX_ORDER:
-                times = params[mix_action]  # [on, off]
+    al = get_next_action()
+    la = get_last_action()
+    if al:
+        for act, rem_min, todo in al:
+            if rem_min <= 0:
+                la[act] = todo
 
-                # Exit the loop if actuator inverted from False to True.
-                # On contrary, continue the loop if actuator is inverted from True to False.
-                na = _invert_actuator_value_if_was_enough(na, mix_action, times[not la[mix_action]])  # Dirty trick: use true/false as index
-
-                if la[mix_action] != na[mix_action]:
-                    la = na  # Update the last action. Prepare it for further activation.
-                    # Exit the loop if actuator inverted from False to True. Relate to initial INVERTED value since:
-                    # 1. The value was inverted by _invert_actuator_value_if_was_enough()
-                    # 2. The new actions (na) was assigned back to la.
-                    if la[mix_action]:
-                        break
-        else:  # Skip non-implemented actuators
-            pass
-
-    activate(reason='Automate for state: %s' % act_name, **la)
+        print 'Intended action for:', act_name, str(la), str(datetime.now())
+        activate(reason='Automate for state: %s' % act_name, **la)
 
 
 def _invert_actuator_value_if_was_enough(act_dict, act_name, time_in_state_min):
@@ -424,7 +423,7 @@ def get_last_change_minutes(actuator, is_on):
     filt = {'%s' % actuator: True, 'reason__icontains': 'automate'}
     try:  # Return -1 if no such field in the DB.
         qs = models.Actions.objects.filter(**filt).last()
-    except exceptions.FieldError:
+    except (exceptions.FieldError, ValueError, KeyError) as e:
         return -1
 
     if not qs:
