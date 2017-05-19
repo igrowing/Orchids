@@ -219,8 +219,15 @@ def sysinfo_list(request):
                 print 'user requested runner restart, completed.'
 
     si = sysinfo.get_sysinfo_html()
+    chart_data = sysinfo.get_sysinfo_d()
+    charts = {
+        'CPU': chart_data['cpu']['load']['current'],
+        'RAM': chart_data['memory']['RAM_MB']['percent'],
+        'Flash': chart_data['memory']['flash_GB']['percent'],
+        'Temp': chart_data['cpu']['temp']['current'],
+    }
 
-    return render(request, 'orchid_app/sysinfo_list.html', {'form': form, 'sysinfo': si})
+    return render(request, 'orchid_app/sysinfo_list.html', {'form': form, 'sysinfo': si, 'charts': charts})
 
 
 def _verb(b):

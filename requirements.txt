@@ -47,7 +47,6 @@ picraft==1.0
 pifacecommon==4.2.1
 pifacedigitalio==3.1.0
 pigpio==1.30
-plotly==2.0.8
 psutil==5.2.2
 pushbullet==0.1
 py==1.4.32

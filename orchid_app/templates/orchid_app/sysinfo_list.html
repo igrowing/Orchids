@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+	<meta content="text/html; charset=utf-8" http-equiv="Content-Type" charset="utf-8">
 	<style id="Orchids_care_4027_Styles">
 	body {
 background: rgb(255,252,254);
@@ -27,9 +27,34 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fffcfe', end
 {{ sysinfo|safe }}
 </p>
     {% if charts %}
-    <h2>System Infographics</h2>
+    <br><h2>System Infographics</h2>
     <p>
-    {{ charts|safe }}
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+       <div id="chart_div" style="width: 900px; height: 250px;"></div>
+    <script>
+      google.charts.load('current', {'packages':['gauge']});
+      google.charts.setOnLoadCallback(drawChart);
+
+      function drawChart() {
+        var data = google.visualization.arrayToDataTable([
+          ['Label', 'Value'],
+          // Data from views charts
+        {% for key, value in charts.items %}
+          ['{{ key }}', {{ value }}],
+        {% endfor %}
+        ]);
+
+        var options = {
+          width: 900, height: 250,
+          redFrom: 95, redTo: 100,
+          yellowFrom:83, yellowTo: 95,
+          minorTicks: 5
+        };
+
+        var chart = new google.visualization.Gauge(document.getElementById('chart_div'));
+        chart.draw(data, options);
+      }
+    </script>
     </p>
     {% endif %}
 <hr>
