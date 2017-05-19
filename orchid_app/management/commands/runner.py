@@ -28,7 +28,8 @@ POLL_PERIOD_MIN = POLL_PERIOD / 60  # minutes
 MAX_FLOW_RATE = 2.5  # L/minute.  This is threshold for emergency water leakage detection. If more than the threshold then close the valves.
 MAX_LEAK_RATE = 0.008
 MAX_SEND_COUNT = POLL_PERIOD / 10  # Send leakage message once in hour
-send_counter = 0
+send_counter_leak = 0
+send_counter_flow = 0
 water_trigger = False
 
 def avg(l):
@@ -125,7 +126,7 @@ class Command(BaseCommand):
                                     controller.activate(reason='Manual timer off', **la)
 
                 except KeyError as e:
-                    pass  # Till any action avaialble
+                    pass  # Till any action available
 
             else:
                 #######################################################################################
@@ -170,6 +171,7 @@ def check_water_flow(liters):
     # Find out which valve is open
     la = controller.get_last_action()
     if (la.mist or la.water) and liters > MAX_FLOW_RATE:
+        if is_alert_eligible(is_leak=False):
             # Try to shut open valve off
             controller.activate(reason='Emergency shut off', force=True, mist=False, water=False,
                                 fan=la.fan, light=la.light, heat=la.heat)
@@ -187,26 +189,60 @@ def check_water_flow(liters):
     # Check leakage when all valves closed
     elif (not la.mist and not la.water) and liters > MAX_LEAK_RATE:
         global water_trigger
-        if water_trigger:
-            # TODO: Add validation of water_trigger time. If was set True long time ago then update time and wait 1 more cycle
-            global send_counter
-            if send_counter == 0:
-                # Try to shut open valve off
-                controller.activate(reason='Emergency shut off', force=True, mist=False, water=False,
-                                    fan=la.fan, light=la.light, heat=la.heat)
+        global send_counter_leak
+        if is_alert_eligible(is_leak=True):
+            # Try to shut open valve off
+            controller.activate(reason='Emergency shut off', force=True, mist=False, water=False,
+                                fan=la.fan, light=la.light, heat=la.heat)
 
-                # Build emergency message
-                msg = 'Water leakage is detected while all valves should be closed.'\
-                      '\n%s liters of water leaked in last minute when should be 0.\n' \
-                      'Tried to close all valves. This may impact watering and/or temperature conditions.\n' \
-                      'Take actions immediately.' % str(round(liters, 3))
-                subj = 'Orchid farm emergency: water leakage detected'
-                controller.send_message(subj, msg)
-                send_counter += 1
-                water_trigger = False
-            elif send_counter < MAX_SEND_COUNT:
-                send_counter += 1
-            else:
-                send_counter = 0
+            # Build emergency message
+            msg = 'Water leakage is detected while all valves should be closed.'\
+                  '\n%s liters of water leaked in last minute when should be 0.\n' \
+                  'Tried to close all valves. This may impact watering and/or temperature conditions.\n' \
+                  'Take actions immediately.' % str(round(liters, 3))
+            subj = 'Orchid farm emergency: water leakage detected'
+            controller.send_message(subj, msg)
+            print "water leak alert must be sent", str(datetime.now())
+            water_trigger = None
         else:
-            water_trigger = True
+            print "water leak alert triggered, not sent", str(datetime.now())
+            water_trigger = datetime.now()
+
+
+def is_alert_eligible(is_leak=False):
+    WATER_TIMEOUT = 300
+
+    global send_counter_leak
+    global send_counter_flow
+    if is_leak:
+        if 0 < send_counter_leak < MAX_SEND_COUNT:
+            send_counter_leak += 1
+            print "water leak alert on hold", str(datetime.now())
+        elif send_counter_leak != 0:
+            send_counter_leak = 0
+    else:
+        if 0 < send_counter_flow < MAX_SEND_COUNT:
+            send_counter_flow += 1
+            print "water flow alert on hold", str(datetime.now())
+        elif send_counter_flow != 0:
+            send_counter_flow = 0
+
+    if not is_leak and send_counter_flow == 0:
+        print "water flow alert must be sent", str(datetime.now())
+        return True
+
+    if is_leak and send_counter_leak == 0:  # send_counter == 0, shoot the message
+        global water_trigger
+        if water_trigger:
+            dt = (datetime.now() - water_trigger).total_seconds()
+            # Return True if got second alert in interval of 1-5 minutes from first one.
+            if 60 < dt < WATER_TIMEOUT:
+                print "water leakage alert must be sent", str(datetime.now())
+                return True
+            elif dt >= WATER_TIMEOUT:
+                # Remove trigger if first one was long time ago, not relevant anymore.
+                print "water leak alert expired", str(datetime.now())
+                water_trigger = None
+
+    return False
+
