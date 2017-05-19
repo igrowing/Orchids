@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import os
 import re
 import time
+import exceptions
 from datetime import datetime, timedelta
 from threading import Thread
 from decimal import Decimal
@@ -126,7 +127,7 @@ class Command(BaseCommand):
                                     # self.stdout.flush()
                                     controller.activate(reason='Manual timer off', **la)
 
-                except KeyError as e:
+                except (exceptions.FieldError, ValueError, KeyError) as e:
                     pass  # Till any action available
 
                 t_cpu = sysinfo.read_cpu()['temp']['current']

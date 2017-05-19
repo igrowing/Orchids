@@ -1,5 +1,6 @@
 import re
 import os
+import exceptions
 import django_tables2 as tables
 from datetime import datetime
 from django.contrib import messages
@@ -128,7 +129,7 @@ def _get_next_actions_parsed():
     al = controller.get_next_action()
     if al:
         for i in range(len(al)):
-            al[i] = (al[i][0].capitalize(), _verb(al[i][2]).capitalize(), 'Now' if al[i][1] == 0 else _humanize(al[i][1]))
+            al[i] = (al[i][0].capitalize(), _verb(al[i][2]).capitalize(), 'Now' if al[i][1] < 1 else _humanize(al[i][1]))
     return al
 
 
@@ -154,9 +155,9 @@ def _get_timer_actions_parsed():
                 for i in was_on:
                     if la[i]:  # was on and still on
                         dt = max(0, secs - (datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds())
-                        res.append((i.capitalize(), _verb(not la[i]).capitalize(), 'Now' if dt == 0 else _humanize(dt, with_secs=True)))
+                        res.append((i.capitalize(), _verb(not la[i]).capitalize(), 'Now' if dt < 1 else _humanize(dt, with_secs=True)))
 
-    except KeyError as e:
+    except (exceptions.FieldError, ValueError, KeyError) as e:
         print 'Error DB query, looking for timer', repr(e)  # Till any action available
 
     return res
