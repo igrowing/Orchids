@@ -46,6 +46,7 @@ Out[49]:
 import time
 import psutil
 import pprint
+from __init__ import memoize
 
 
 def read_cpu_temp():
@@ -58,6 +59,7 @@ def read_cpu_temp():
         return 0.0
 
 
+@memoize(keep=1)
 def read_system():
     _, _, days, hours, minutes, seconds, _, _, _ = time.gmtime(psutil.time.time() - psutil.boot_time())
     return {
@@ -67,6 +69,7 @@ def read_system():
     }
 
 
+@memoize(keep=1)
 def read_cpu():
     d = {}
     current, min, max = psutil.cpu_freq()
@@ -77,6 +80,7 @@ def read_cpu():
     return d
 
 
+@memoize(keep=1)
 def read_memory():
     d = {}
     m = psutil.virtual_memory()
@@ -90,6 +94,7 @@ def read_memory():
     return d
 
 
+@memoize(keep=1)
 def read_network():
     d = {}
     s = psutil.net_if_stats()
