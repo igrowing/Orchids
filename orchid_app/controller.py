@@ -6,11 +6,11 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 
 from orchid_app import actuators, models
-from orchid_app.utils import sendmail, pushb
+from orchid_app.utils import sendmail, pushb, memoize
 
 MIN_AVG_HOURS = 0.4   # TODO: reconsider the value
 MAX_TIMEOUT = 999999  # Very long time indicated no action was found
-NO_DATA = -1
+NO_DATA = -1          # Used in get_current_state()
 
 # Global variables:
 #  Minimize page loading time.
@@ -148,6 +148,7 @@ def activate(reason='unknown', force=False, **kwargs):
     return ', '.join(msg)
 
 
+@memoize(keep=1)
 def get_last_action(with_reason=False):
     '''
     :return: Dictionary of statuses of all actuators. Does not contain non-actuator data (ID, date, reason)
@@ -170,6 +171,7 @@ def get_last_action(with_reason=False):
     return a.get_all_fields()
 
 
+@memoize(keep=1)
 def get_last_automated_action(with_reason=False):
     a = {}
     try:
@@ -191,6 +193,7 @@ def get_last_automated_action(with_reason=False):
     return a.get_all_fields(exclude=('id', 'reason'))
 
 
+# Don't use Memoize decorator here: it doesn't remove obsolete data, i.e. once read current state will never refresh even when timeout expired.
 def get_current_state():
     if not current_state:
         read_current_state()
@@ -207,6 +210,7 @@ def get_current_state():
     return current_state
 
 
+@memoize(keep=600)
 def read_current_state():
     '''Calculate averages for all possible states. Choose the most appropriate state.
     Update current_state status as full record of state_list and its index.
@@ -369,7 +373,7 @@ def _run_state_action():
             if rem_min <= 0:
                 la[act] = todo
 
-        print 'Intended action for:', act_name, str(la), str(datetime.now())
+        # print 'Intended action for:', act_name, str(la), str(datetime.now())
         activate(reason='Automate for state: %s' % act_name, **la)
 
 

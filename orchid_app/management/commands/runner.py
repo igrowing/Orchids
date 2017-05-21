@@ -210,9 +210,6 @@ def check_water_flow(liters):
             controller.send_message(subj, msg)
             print "water leak alert must be sent", str(datetime.now())
             water_trigger = None
-        else:
-            print "water leak alert triggered, not sent", str(datetime.now())
-            water_trigger = datetime.now()
 
 
 def is_alert_eligible(is_leak=False):
@@ -249,6 +246,9 @@ def is_alert_eligible(is_leak=False):
                 # Remove trigger if first one was long time ago, not relevant anymore.
                 print "water leak alert expired", str(datetime.now())
                 water_trigger = None
+        else:
+            print "water leak alert triggered", str(datetime.now())
+            water_trigger = datetime.now()
 
     return False
 

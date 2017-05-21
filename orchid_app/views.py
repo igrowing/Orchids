@@ -80,7 +80,7 @@ def list(request):
     return render(request, 'orchid_app/sensor_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table,
                                                            'actuators': a, 'statuses': statuses, 'actionList': al,
                                                            'timerList': tl,
-                                                          })
+                                                           })
 
 
 def parse_user_input(a, request):
@@ -151,7 +151,7 @@ def _get_timer_actions_parsed():
             if was_on:
                 # Avoid exception in case of empty database.
                 la = models.Actions.objects.last().get_all_fields()
-                print 'was_on', str(was_on), 'secs', str(secs), 'la', repr(la)
+                # print 'was_on', str(was_on), 'secs', str(secs), 'la', repr(la)
                 for i in was_on:
                     if la[i]:  # was on and still on
                         dt = max(0, secs - (datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds())
@@ -216,7 +216,6 @@ def sysinfo_list(request):
             elif 'restart' in request.POST:
                 print 'user requested runner restart.'
                 os.system('sudo service orchid_runner restart')
-                print 'user requested runner restart, completed.'
 
     si = sysinfo.get_sysinfo_html()
     chart_data = sysinfo.get_sysinfo_d()
