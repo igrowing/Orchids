@@ -318,7 +318,7 @@ function validate() {
             {% endif %}
             </td> <td>
             </td><td valign="top">
-            <b>Manual control: <input class="spoilerbutton" type="button" name='Show' value="Give me control!" onclick="this.name=this.name=='Show'?'Hide':'Show';">
+            <b>Manual control: <input class="spoilerbutton" type="button" name='Show' title='Show/Hide manual controls' value="Give me control!" onclick="this.name=this.name=='Show'?'Hide':'Show';">
 		<div class="spoiler"><div>
 	            {{ form.as_p }}
             	<input type="submit" value="Ready? Go!">
@@ -336,7 +336,7 @@ Showing: Sensors</td><td align="right"><a href="actions/">Show Actions</a></td><
 </h3>
 
 {% if paginator.number == 1 %}
-<input class="spoilerbutton" type="button" name='Show' value="Raw sensors data" onclick="this.name=this.name=='Show'?'Hide':'Show';">
+<input class="spoilerbutton" type="button" name='Show' title='Show/Hide sensors data' value="Raw sensors data" onclick="this.name=this.name=='Show'?'Hide':'Show';">
 <div class="spoiler"><div>
 {% endif %}
 {% if table %}
