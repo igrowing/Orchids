@@ -192,10 +192,11 @@ def check_water_flow(liters):
             subj = 'Orchid farm emergency: water leakage detected'
             controller.send_message(subj, msg)
 
+        return
+
     # Check leakage when all valves closed
     elif (not la.mist and not la.water) and liters > MAX_LEAK_RATE:
         global water_trigger
-        global send_counter_leak
         if is_alert_eligible(is_leak=True):
             # Try to shut open valve off
             controller.activate(reason='Emergency shut off', force=True, mist=False, water=False,
@@ -210,6 +211,29 @@ def check_water_flow(liters):
             controller.send_message(subj, msg)
             print "water leak alert must be sent", str(datetime.now())
             water_trigger = None
+
+        return
+
+    # Check water is running when drip is on
+    elif la.water and liters <= MAX_LEAK_RATE:
+        global send_counter_flow
+        if 0 < send_counter_flow < MAX_SEND_COUNT:
+            send_counter_flow += 1
+            print "No water flow alert on hold", str(datetime.now())
+            return
+        elif send_counter_flow != 0:  # >= MAX_SEND_COUNT
+            send_counter_flow = 0
+            return
+
+        # Shut the alert! Send_counter_flow == 0 here.
+        # Build emergency message
+        msg = "Water isn't flowing while dripping valve is open."\
+              '\n%s liters of water leaked in last minute when should be more.\n' \
+              'This may impact watering and/or temperature conditions.\n' \
+              'Take actions immediately.' % str(round(liters, 3))
+        subj = 'Orchid farm emergency: no water detected'
+        controller.send_message(subj, msg)
+        print "No water alert must be sent", str(datetime.now())
 
 
 def is_alert_eligible(is_leak=False):
