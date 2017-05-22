@@ -148,7 +148,6 @@ def activate(reason='unknown', force=False, **kwargs):
     return ', '.join(msg)
 
 
-@memoize(keep=1)
 def get_last_action(with_reason=False):
     '''
     :return: Dictionary of statuses of all actuators. Does not contain non-actuator data (ID, date, reason)
@@ -171,7 +170,6 @@ def get_last_action(with_reason=False):
     return a.get_all_fields()
 
 
-@memoize(keep=1)
 def get_last_automated_action(with_reason=False):
     a = {}
     try:
