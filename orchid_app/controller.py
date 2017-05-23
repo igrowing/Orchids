@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 import copy
@@ -462,4 +463,29 @@ def send_message(subj, msg):
     sendmail.sendmail(subj, msg)
     # Send emergency IM
     pushb.send_note(subj, msg)
+
+
+def update_firmware():
+    '''
+    Download and unpack latest software from GitHub.
+    Consider automatic runner restart on FW update Positive completion.
+    :return: bool: completed well or not.
+    '''
+    cmds = (
+        'wget http://github.com/igrowing/orchids/archive/master.zip',
+        'unzip -quo master.zip',
+        'mv -f Orchids-master/* ./',
+        'rm -f Orchids-master master.zip*',
+    )
+
+    os.system('logger Firmware update start.')
+    for cmd in cmds:
+        os.system('logger Firmware update running: ' + cmd)
+        rc = os.system(cmd)
+        if rc != 0:
+            os.system('logger Firmware update aborted at command: [' + cmd + '] with returncode: ' + str(rc))
+            return False
+
+    os.system('logger Firmware update completed.')
+    return True
 
