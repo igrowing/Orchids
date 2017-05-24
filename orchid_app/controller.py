@@ -12,6 +12,7 @@ from orchid_app.utils import sendmail, pushb, memoize
 MIN_AVG_HOURS = 0.4   # TODO: reconsider the value
 MAX_TIMEOUT = 999999  # Very long time indicated no action was found
 NO_DATA = -1          # Used in get_current_state()
+VERSION = '0.1'
 
 # Global variables:
 #  Minimize page loading time.
@@ -472,9 +473,10 @@ def update_firmware():
     :return: bool: completed well or not.
     '''
     cmds = (
+        'rm -f master.zip*',
         'wget http://github.com/igrowing/orchids/archive/master.zip',
         'unzip -quo master.zip',
-        'mv -f Orchids-master/* ./',
+        'rsync -a Orchids-master/* ./',
         'rm -f Orchids-master master.zip*',
     )
 

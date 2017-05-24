@@ -56,7 +56,7 @@ class Command(BaseCommand):
         ##################                 PREPARATIONS                ########################
         #######################################################################################
 
-        os.system('logger orchid_runner has started')
+        os.system('logger orchid_runner has started in `pwd`')
         # Shut down on system start/restart everything could be open.
         controller.activate(reason='System startup', force=True, mist=False, drip=False, fan=False, light=False, heat=False)
 
