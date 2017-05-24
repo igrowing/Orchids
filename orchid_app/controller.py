@@ -477,12 +477,12 @@ def update_firmware():
         'wget http://github.com/igrowing/orchids/archive/master.zip',
         'unzip -quo master.zip',
         'rsync -a Orchids-master/* ./',
-        'rm -f Orchids-master master.zip*',
+        'rm -rf Orchids-master master.zip*',
     )
 
     os.system('logger Firmware update start.')
     for cmd in cmds:
-        os.system('logger Firmware update running: ' + cmd)
+        os.system('logger Firmware update running: "' + cmd + '"')
         rc = os.system(cmd)
         if rc != 0:
             os.system('logger Firmware update aborted at command: [' + cmd + '] with returncode: ' + str(rc))
