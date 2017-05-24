@@ -472,23 +472,7 @@ def update_firmware():
     Consider automatic runner restart on FW update Positive completion.
     :return: bool: completed well or not.
     '''
-    prefix = 'cd /home/pi/Orchids/ && '
-    cmds = (
-        'rm -f master.zip*',
-        'wget https://github.com/igrowing/orchids/archive/master.zip',
-        'unzip -quo master.zip',
-        'rsync -a Orchids-master/* ./',
-        'rm -rf Orchids-master master.zip*',
-    )
 
-    os.system('logger Firmware update start.')
-    for cmd in cmds:
-        os.system('logger Firmware update running: "' + cmd + '"')
-        rc = os.system(prefix + cmd)
-        if rc != 0:
-            os.system('logger Firmware update aborted at command: [' + cmd + '] with returncode: ' + str(rc))
-            return False
-
-    os.system('logger Firmware update completed.')
+    os.system('nohup /bin/bash /home/pi/Orchids/fw_update.sh &')
     return True
 
