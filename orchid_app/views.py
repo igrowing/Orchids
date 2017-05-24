@@ -212,10 +212,17 @@ def sysinfo_list(request):
         if form.is_valid():
             if 'update' in request.POST:
                 print 'User requested the firmware update.'
-                # TODO: Add FW refresh procedure
+                msg = 'User requested the firmware update.'
+                res = controller.update_firmware()
             elif 'restart' in request.POST:
                 print 'user requested runner restart.'
-                os.system('sudo service orchid_runner restart')
+                msg = 'user requested runner restart.'
+                res = os.system('sudo service orchid_runner restart') == 0
+
+            if res:
+                messages.success(request, "Actions taken: " + msg)
+            else:
+                messages.error(request, "Actions failed: " + msg)
 
     si = sysinfo.get_sysinfo_html()
     chart_data = sysinfo.get_sysinfo_d()
