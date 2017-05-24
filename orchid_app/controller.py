@@ -221,6 +221,7 @@ def read_current_state():
     # Read first the status with minimal averaging to catch emergency state (lowest and highest temperatures).
     status = calc_avg(MIN_AVG_HOURS)
     flag = False
+    global current_state
 
     for state in reversed(state_list):
         duration = state['avg']
@@ -235,7 +236,6 @@ def read_current_state():
 
         cr = state['criteria']
         if cr['tmin'] <= status['t_amb'] < cr['tmax'] and cr['hmin'] <= status['rh'] < cr['hmax'] and cr['wmin'] <= status['wind'] < cr['wmax']:
-            global current_state
             current_state = (state, state_list.index(state), datetime.now())
             flag = True
             break
@@ -252,7 +252,6 @@ def read_current_state():
         for state in reversed(state_list):
             cr = state['criteria']
             if cr['tmin'] <= status['t_amb'] < cr['tmax'] and cr['hmin'] <= status['rh'] < cr['hmax'] and cr['wmin'] <= status['wind'] < cr['wmax']:
-                global current_state
                 current_state = (state, state_list.index(state), datetime.now())
                 break
 
