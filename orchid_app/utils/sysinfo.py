@@ -62,10 +62,16 @@ def read_cpu_temp():
 @memoize(keep=1)
 def read_system():
     _, _, days, hours, minutes, seconds, _, _, _ = time.gmtime(psutil.time.time() - psutil.boot_time())
+    try:
+        from orchid_app.controller import VERSION
+    except:
+        VERSION = 'N/A'
+
     return {
         'uptime': '%s days, %s hours, %s minutes, %s seconds' % (days - 1, hours, minutes, seconds),
         'timezone': ', '.join(psutil.time.tzname),
         'datetime': psutil.time.asctime(),
+        'version': VERSION,
     }
 
 
@@ -144,6 +150,7 @@ def get_sysinfo_html():
     datetime = d['system']['datetime']
     timezone = d['system']['timezone']
     uptime = d['system']['uptime']
+    version = d['system']['version']
     cores = d['cpu']['cores']
     f_min = d['cpu']['frequency']['min']
     f_max = d['cpu']['frequency']['max']
