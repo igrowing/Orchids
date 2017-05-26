@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import os
 import re
 import time
-import exceptions
+import django.core.exceptions
 from datetime import datetime, timedelta
 from threading import Thread
 from decimal import Decimal
@@ -108,26 +108,37 @@ class Command(BaseCommand):
                     qs = Actions.objects.filter(**filt).last()
 
                     if 'with timer' in qs.reason.lower():
+                        # Validate whether the action was disabled automatically already. Skip changes if found.
+                        last_on_id = qs.id
                         min_l = re.findall('(\d+) min', qs.reason.lower())
                         secs = int(min_l[0]) * 60 if min_l else 0
+
+                        # Collect what was on in list
+                        was_on = [k for k, v in qs.get_all_fields().iteritems() if v]
+
+                        # Filter out from was_on all actions that were disabled later (manually or automatically)
+                        for action in was_on:
+                            filt = {action: False, 'id__gt': last_on_id}
+                            qs1 = Actions.objects.filter(**filt).first()
+                            if qs1:
+                                was_on.remove(action)
+
                         # Time gone. Check if needed action.
-                        if (datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds() > secs:
-                            was_on = [k for k, v in qs.get_all_fields().iteritems() if v]
-                            if was_on:
-                                changed = False
-                                # Avoid exception in case of empty database.
-                                la = Actions.objects.last().get_all_fields()
-                                for i in was_on:
-                                    if la[i]:
-                                        la[i] = False
-                                        changed = True
+                        if (datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds() > secs and was_on:
+                            changed = False
+                            # Avoid exception in case of empty database.
+                            la = Actions.objects.last().get_all_fields()
+                            for i in was_on:
+                                if la[i]:
+                                    la[i] = False
+                                    changed = True
 
-                                if changed:
-                                    # self.stdout.write('Timer ended: %s' % datetime.now())
-                                    # self.stdout.flush()
-                                    controller.activate(reason='Manual timer off', **la)
+                            if changed:
+                                # self.stdout.write('Timer ended: %s' % datetime.now())
+                                # self.stdout.flush()
+                                controller.activate(reason='Manual timer off', **la)
 
-                except (exceptions.FieldError, ValueError, KeyError) as e:
+                except (django.core.exceptions.FieldError, ValueError, KeyError) as e:
                     pass  # Till any action available
 
                 t_cpu = sysinfo.read_cpu()['temp']['current']
