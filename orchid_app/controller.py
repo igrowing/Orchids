@@ -6,7 +6,7 @@ from django.core import exceptions
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-from orchid_app import actuators, models
+from orchid_app import actuators, models, utils
 from orchid_app.utils import sendmail, pushb, memoize
 
 MIN_AVG_HOURS = 0.4   # TODO: reconsider the value
@@ -335,6 +335,7 @@ def get_next_action():
             next_action = not la[action]
             result.append((action, next_change_in_min, next_action))
         elif action == 'mix':  # mix action.
+            # Example: 'mix': {'mist': [30, 90], 'fan': [60, 60]}
             for mix_action in MIX_ORDER:
                 times = params[mix_action]  # [on, off]
                 next_change_in_min = max(times[not la[mix_action]] - get_last_change_minutes(mix_action, la[mix_action]), 0)
@@ -372,26 +373,38 @@ def _run_state_action():
             if rem_min <= 0:
                 la[act] = todo
 
+        # Sanity check: if something is on automatically and should not be in this state then turn it off.
+        la = _sanity_check(la, state['action'])
+
         # print 'Intended action for:', act_name, str(la), str(datetime.now())
         activate(reason='Automate for state: %s' % act_name, **la)
 
 
-def _invert_actuator_value_if_was_enough(act_dict, act_name, time_in_state_min):
-    '''Invert actuator value in the dictionary if was in same state longer than time_in_state_min.
-    Don't change other actuators' state.
+def _sanity_check(proposal, possible):
+    possible = utils.flatten_dict(possible)
+    for k, v in models.Actions().get_all_fields().iteritems():
+        proposal[k] = proposal[k] if k in possible.keys() else False
 
-    :param act_dict:           contains current state of all actuators
-    :param act_name:           points to required actuator
-    :param time_in_state_min:  criteria for change.
-    :return:                   dictionary with updated state.
-    '''
+    return proposal
 
-    ad = copy.deepcopy(act_dict)
-    eligible_change = get_last_change_minutes(act_name, act_dict[act_name]) > time_in_state_min
-    if eligible_change:
-        ad[act_name] = not ad[act_name]
 
-    return ad
+# TODO: unused function. Remove it
+# def _invert_actuator_value_if_was_enough(act_dict, act_name, time_in_state_min):
+#     '''Invert actuator value in the dictionary if was in same state longer than time_in_state_min.
+#     Don't change other actuators' state.
+#
+#     :param act_dict:           contains current state of all actuators
+#     :param act_name:           points to required actuator
+#     :param time_in_state_min:  criteria for change.
+#     :return:                   dictionary with updated state.
+#     '''
+#
+#     ad = copy.deepcopy(act_dict)
+#     eligible_change = get_last_change_minutes(act_name, act_dict[act_name]) > time_in_state_min
+#     if eligible_change:
+#         ad[act_name] = not ad[act_name]
+#
+#     return ad
 
 
 def is_enabled(actuator, automate=False):

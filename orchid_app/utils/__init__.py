@@ -1,7 +1,9 @@
 import re
 import time
+import pushb
 import cPickle
 import hashlib
+import sendmail
 
 from functools import wraps
 
@@ -84,4 +86,18 @@ def memoize(keep=True, cache=None):
             return value
         return _memoize1
     return _memoize0
+
+
+def flatten_dict(init_dict):
+    res_dict = {}
+    if type(init_dict) is not dict:
+        return res_dict
+
+    for k, v in init_dict.iteritems():
+        if type(v) == dict:
+            res_dict.update(flatten_dict(v))
+        else:
+            res_dict[k] = v
+
+    return res_dict
 

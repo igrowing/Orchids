@@ -1,8 +1,8 @@
 import re
 import os
-import exceptions
 import django_tables2 as tables
 from datetime import datetime
+from django.core import exceptions
 from django.contrib import messages
 from django.shortcuts import render
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
