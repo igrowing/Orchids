@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import time
 import copy
@@ -12,7 +13,7 @@ from orchid_app.utils import sendmail, pushb, memoize
 MIN_AVG_HOURS = 0.4   # TODO: reconsider the value
 MAX_TIMEOUT = 999999  # Very long time indicated no action was found
 NO_DATA = -1          # Used in get_current_state()
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 
 # Global variables:
 #  Minimize page loading time.
@@ -341,6 +342,9 @@ def get_next_action():
                 next_change_in_min = max(times[not la[mix_action]] - get_last_change_minutes(mix_action, la[mix_action]), 0)
                 next_action = not la[mix_action]
                 result.append((mix_action, next_change_in_min, next_action))
+                # Exit the mix actions loop if action was Turn on: when mist is on, no need to turn on the fan. When mist is off then fan will be activated
+                if next_action:
+                    break
         else:  # Skip non-implemented actuators
             pass
 
@@ -366,8 +370,8 @@ def _run_state_action():
 
     act_name = state['name']        # Keep name for reporting.
 
+    la = get_last_automated_action()
     al = get_next_action()
-    la = get_last_action()
     if al:
         for act, rem_min, todo in al:
             if rem_min <= 0:
@@ -376,15 +380,60 @@ def _run_state_action():
         # Sanity check: if something is on automatically and should not be in this state then turn it off.
         la = _sanity_check(la, state['action'])
 
-        # print 'Intended action for:', act_name, str(la), str(datetime.now())
-        activate(reason='Automate for state: %s' % act_name, **la)
+    # Process timer
+    try:
+        # Find last record with Timer enable
+        filt = {'reason__icontains': 'with timer'}
+        last_timer_on = models.Actions.objects.filter(**filt).last()
+
+        filt = {'reason__icontains': 'timer off'}
+        last_timer_off = models.Actions.objects.filter(**filt).last()
+
+        if last_timer_on:
+            # Validate whether the action was disabled automatically already. Skip changes if found.
+            last_on_id = last_timer_on.id
+            min_l = re.findall('(\d+) min', last_timer_on.reason.lower())
+            secs = int(min_l[0]) * 60 if min_l else 0
+
+            # Collect what was on in list
+            was_on = [k for k, v in last_timer_on.get_all_fields().iteritems() if v]
+
+            # Filter out from was_on all actions that were disabled later (manually or automatically)
+            for action in was_on:
+                filt = {action: False, 'id__gt': last_on_id}
+                qs1 = models.Actions.objects.filter(**filt).first()
+                if qs1:
+                    was_on.remove(action)
+
+            # Time gone. Check if needed action.
+            if (datetime.utcnow() - last_timer_on.date.replace(tzinfo=None)).total_seconds() > secs and was_on:
+                changed = False
+                # Avoid exception in case of empty database.
+                la = models.Actions.objects.last().get_all_fields()
+                for i in was_on:
+                    if la[i]:
+                        la[i] = False
+                        changed = True
+
+                if changed:
+                    os.stdout.write('Timer ended: %s' % datetime.now())
+                    os.stdout.flush()
+                    # activate(reason='Manual timer off', **la)
+
+    except (exceptions.FieldError, ValueError, KeyError) as e:
+        pass  # Till any action available
+
+    print 'Intended action for:', act_name, str(la), str(datetime.now())
+    # activate(reason='Automate for state: %s' % act_name, **la)
 
 
 def _sanity_check(proposal, possible):
     possible = utils.flatten_dict(possible)
+    os.system('logger Got proposal ' + str(proposal))
     for k, v in models.Actions().get_all_fields().iteritems():
         proposal[k] = proposal[k] if k in possible.keys() else False
 
+    os.system('logger Return proposal ' + str(proposal))
     return proposal
 
 
