@@ -174,24 +174,42 @@ def get_last_action(with_reason=False):
 
 
 def get_last_automated_action(with_reason=False):
-    a = {}
+    # Try to read last automated action.
+    la = {}
     try:
         # Avoid exception in case of empty database.
         # Find last record generated automatically
         filt = {'reason__icontains': 'automate'}
-        a = models.Actions.objects.filter(**filt).last()
+        la = models.Actions.objects.filter(**filt).last()
     except (exceptions.FieldError, ValueError, KeyError) as e:
         sys.stderr.write('Error DB query: %s (%s)' % (e.message, type(e)))
-        return a
+        return la
 
-    if not a:
+    # Try to read last timer action.
+    lt = {}
+    try:
+        # Avoid exception in case of empty database.
+        # Find last record generated automatically
+        filt = {'reason__icontains': 'timer off'}
+        lt = models.Actions.objects.filter(**filt).last()
+    except (exceptions.FieldError, ValueError, KeyError) as e:
+        sys.stderr.write('Error DB query: %s (%s)' % (e.message, type(e)))
+        return lt
+
+    if la and lt:
+        if lt.id > la.id:
+            la = lt
+    elif not la and lt:
+        la = lt
+
+    if not la:
         # Simulate empty default last automated action
-        a = models.Actions()
-        a['date'] = datetime(1, 1, 1)
+        la = models.Actions()
+        la['date'] = datetime(1, 1, 1)
 
     if with_reason:
-        return a.get_all_fields(exclude=('id'))
-    return a.get_all_fields(exclude=('id', 'reason'))
+        return la.get_all_fields(exclude=('id'))
+    return la.get_all_fields(exclude=('id', 'reason'))
 
 
 # Don't use Memoize decorator here: it doesn't remove obsolete data, i.e. once read current state will never refresh even when timeout expired.
