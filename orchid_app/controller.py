@@ -387,7 +387,8 @@ def _run_state_action():
         return
 
     act_name = state['name']        # Keep name for reporting.
-
+    reason = 'Automate for state: %s' % act_name
+    
     la = get_last_automated_action()
     al = get_next_action()
     if al:
@@ -398,51 +399,8 @@ def _run_state_action():
         # Sanity check: if something is on automatically and should not be in this state then turn it off.
         la = _sanity_check(la, state['action'])
 
-    # Process timer
-    try:
-        # Find last record with Timer enable
-        filt = {'reason__icontains': 'with timer'}
-        last_timer_on = models.Actions.objects.filter(**filt).last()
-
-        filt = {'reason__icontains': 'timer off'}
-        last_timer_off = models.Actions.objects.filter(**filt).last()
-
-        if last_timer_on:
-            # Validate whether the action was disabled automatically already. Skip changes if found.
-            last_on_id = last_timer_on.id
-            min_l = re.findall('(\d+) min', last_timer_on.reason.lower())
-            secs = int(min_l[0]) * 60 if min_l else 0
-
-            # Collect what was on in list
-            was_on = [k for k, v in last_timer_on.get_all_fields().iteritems() if v]
-
-            # Filter out from was_on all actions that were disabled later (manually or automatically)
-            for action in was_on:
-                filt = {action: False, 'id__gt': last_on_id}
-                qs1 = models.Actions.objects.filter(**filt).first()
-                if qs1:
-                    was_on.remove(action)
-
-            # Time gone. Check if needed action.
-            if (datetime.utcnow() - last_timer_on.date.replace(tzinfo=None)).total_seconds() > secs and was_on:
-                changed = False
-                # Avoid exception in case of empty database.
-                la = models.Actions.objects.last().get_all_fields()
-                for i in was_on:
-                    if la[i]:
-                        la[i] = False
-                        changed = True
-
-                if changed:
-                    os.stdout.write('Timer ended: %s' % datetime.now())
-                    os.stdout.flush()
-                    # activate(reason='Manual timer off', **la)
-
-    except (exceptions.FieldError, ValueError, KeyError) as e:
-        pass  # Till any action available
-
-    print 'Intended action for:', act_name, str(la), str(datetime.now())
-    # activate(reason='Automate for state: %s' % act_name, **la)
+        # print 'Intended action for:', act_name, str(la), str(datetime.now())
+        activate(reason=reason, **la)
 
 
 def _sanity_check(proposal, possible):
@@ -472,27 +430,69 @@ def _sanity_check(proposal, possible):
 #         ad[act_name] = not ad[act_name]
 #
 #     return ad
+#
+#
+# def is_enabled(actuator, automate=False):
+#     '''
+#     If automate == True:
+#         Returns True if last action to 'actuator' was automatic.
+#         Returns False if  last action to 'actuator' was manual.
+#     If automate == False:
+#         Returns True if last action to 'actuator' was manual.
+#         Returns False if  last action to 'actuator' was automatic.
+#     :param automate: bool
+#     :param actuator: str
+#     :return:
+#     '''
+#     la = get_last_action(with_reason=True)
+#     if not la:
+#         return False
+#     if 'automate' in la.reason.lower():
+#         return automate and la[actuator]
+#     else:
+#         return not automate and la[actuator]
 
 
-def is_enabled(actuator, automate=False):
-    '''
-    If automate == True:
-        Returns True if last action to 'actuator' was automatic.
-        Returns False if  last action to 'actuator' was manual.
-    If automate == False:
-        Returns True if last action to 'actuator' was manual.
-        Returns False if  last action to 'actuator' was automatic.
-    :param automate: bool
-    :param actuator: str
-    :return:
-    '''
-    la = get_last_action(with_reason=True)
-    if not la:
-        return False
-    if 'automate' in la.reason.lower():
-        return automate and la[actuator]
-    else:
-        return not automate and la[actuator]
+def get_timer_order():
+    # Process timer
+    try:
+       # Find last record with Timer enable
+       filt = {'reason__icontains': 'with timer'}
+       qs = models.Actions.objects.filter(**filt).last()
+
+       if qs:
+           # Validate whether the action was disabled automatically already. Skip changes if found.
+           last_on_id = qs.id
+           min_l = re.findall('(\d+) min', qs.reason.lower())
+           secs = int(min_l[0]) * 60 if min_l else 0
+
+           # Collect what was on in list
+           was_on = [k for k, v in qs.get_all_fields().iteritems() if v]
+
+           # Filter out from was_on all actions that were disabled later (manually or automatically)
+           for action in was_on:
+               filt = {action: False, 'id__gt': last_on_id}
+               qs1 = models.Actions.objects.filter(**filt).first()
+               if qs1:
+                   was_on.remove(action)
+
+           # Time gone. Check if needed action.
+           if (datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds() > secs and was_on:
+               changed = False
+               # Avoid exception in case of empty database.
+               la = models.Actions.objects.last().get_all_fields()
+               for i in was_on:
+                   if la[i]:
+                       la[i] = False
+                       changed = True
+
+               if changed:
+                   # self.stdout.write('Timer ended: %s' % datetime.now())
+                   # self.stdout.flush()
+                   return 'Manual timer off', la
+
+    except (exceptions.FieldError, ValueError, KeyError) as e:
+       pass  # Till any action available
 
 
 def get_last_change_minutes(actuator, is_on):
