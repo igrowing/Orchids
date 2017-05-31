@@ -2,7 +2,6 @@ import os
 import re
 import sys
 import time
-import copy
 from django.core import exceptions
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -426,46 +425,6 @@ def _sanity_check(proposal, possible):
     return proposal
 
 
-# TODO: unused function. Remove it
-# def _invert_actuator_value_if_was_enough(act_dict, act_name, time_in_state_min):
-#     '''Invert actuator value in the dictionary if was in same state longer than time_in_state_min.
-#     Don't change other actuators' state.
-#
-#     :param act_dict:           contains current state of all actuators
-#     :param act_name:           points to required actuator
-#     :param time_in_state_min:  criteria for change.
-#     :return:                   dictionary with updated state.
-#     '''
-#
-#     ad = copy.deepcopy(act_dict)
-#     eligible_change = get_last_change_minutes(act_name, act_dict[act_name]) > time_in_state_min
-#     if eligible_change:
-#         ad[act_name] = not ad[act_name]
-#
-#     return ad
-#
-#
-# def is_enabled(actuator, automate=False):
-#     '''
-#     If automate == True:
-#         Returns True if last action to 'actuator' was automatic.
-#         Returns False if  last action to 'actuator' was manual.
-#     If automate == False:
-#         Returns True if last action to 'actuator' was manual.
-#         Returns False if  last action to 'actuator' was automatic.
-#     :param automate: bool
-#     :param actuator: str
-#     :return:
-#     '''
-#     la = get_last_action(with_reason=True)
-#     if not la:
-#         return False
-#     if 'automate' in la.reason.lower():
-#         return automate and la[actuator]
-#     else:
-#         return not automate and la[actuator]
-
-
 def get_timer_order():
     '''Return a tuple of: (dictionary_of_actuators_and_actions, remaining_time_in_minutes).
     Return None if no timers active.
@@ -499,18 +458,9 @@ def get_timer_order():
            t_diff = secs - ((datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds())
            la = models.Actions.objects.last().get_all_fields()
            if t_diff <= 0 and was_on:
-               changed = False
                for i in was_on:
                    if la[i]:
                        la[i] = False
-                       changed = True
-
-               # if changed:
-               #     # self.stdout.write('Timer ended: %s' % datetime.now())
-               #     # self.stdout.flush()
-               #     return reason, la, t_diff / 60
-               # else:
-               #     return return reason, la, t_diff / 60
 
            return la, t_diff / 60
 
