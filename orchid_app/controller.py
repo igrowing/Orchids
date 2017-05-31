@@ -12,7 +12,7 @@ from orchid_app.utils import sendmail, pushb, memoize
 MIN_AVG_HOURS = 0.4   # TODO: reconsider the value
 MAX_TIMEOUT = 999999  # Very long time indicated no action was found
 NO_DATA = -1          # Used in get_current_state()
-VERSION = '0.1.1'
+VERSION = '0.1.2'
 
 # Global variables:
 #  Minimize page loading time.
@@ -29,10 +29,9 @@ current_state = []
 PRIM_ACTIONS = ['water', 'mist', 'fan', 'heat', 'light']  # 'mix' is not in primitive actions. Mix must be parsed separately.
 #PRIM_ACTIONS = ['water', 'mist', 'fan', 'heat', 'ac', 'shade', 'light']
 # Mix actions define just order of activity, i.e. priority. The structure is the same [on_time, off_time].
-# Example: 'mix': {'mist': [5, 40], 'fan': [10, 35]}
-# means: Turn mist on for 5 minutes, then turn mist off anf turn fan on for 10 min, then turn fan off for 30 min and repeat.
-# In this example full cycle time is 45 min: mist on 5min + fan on 10min + off 30min.
-# I.e. sum of on+off time for each actuator = full cycle time. 5+40=45, 10+35=45.
+#   Example: 'mix': {'mist': [5, 40], 'fan': [10, 35]}
+#            means: Turn mist on for 5 minutes, then turn mist off anf turn fan on for 10 min, then turn fan off for 30 min and repeat.
+# In this example, sum of on+off time for each actuator = full cycle time. 5+40=45, 10+35=45.
 MIX_ORDER = ['mist', 'fan']  # Define action priority in mix.
 
 state_list = [
@@ -428,11 +427,11 @@ def _run_state_action():
 
 def _sanity_check(proposal, possible):
     possible = utils.flatten_dict(possible)
-    os.system('logger "Got proposal %s"' % str(proposal))
+    print "Got proposal %s" % str(proposal)
     for k, v in models.Actions().get_all_fields().iteritems():
         proposal[k] = proposal[k] if k in possible.keys() else False
 
-    os.system('logger "Return proposal %s"' % str(proposal))
+    print "Return proposal %s" % str(proposal)
     return proposal
 
 
