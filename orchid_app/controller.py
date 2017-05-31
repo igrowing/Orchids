@@ -380,6 +380,16 @@ def _run_state_action():
     I.e. check eligibility of actuator to change state.
     '''
 
+    # Process timer first.
+    tr = get_timer_order()
+    if tr:
+        ad, t_rem = tr  # Unpack timer results
+        if t_rem < 0.5:  # Approximate to zero time. If statement t_rem <= 0 then it looks like 1 minute delay.
+            activate(reason='Manual timer off', **ad)
+
+        # Do not follow automated rules if timer is active.
+        return
+
     state = get_current_state()[0]  # Take dictionary only. Index doesn't matter.
 
     # Abort calculation if no meaningful data available.
@@ -388,7 +398,10 @@ def _run_state_action():
 
     act_name = state['name']        # Keep name for reporting.
     reason = 'Automate for state: %s' % act_name
-    
+
+
+    # Consider actuators off for automated actions time calculation.
+
     la = get_last_automated_action()
     al = get_next_action()
     if al:
@@ -405,11 +418,11 @@ def _run_state_action():
 
 def _sanity_check(proposal, possible):
     possible = utils.flatten_dict(possible)
-    os.system('logger Got proposal ' + str(proposal))
+    os.system('logger "Got proposal %s"' % str(proposal))
     for k, v in models.Actions().get_all_fields().iteritems():
         proposal[k] = proposal[k] if k in possible.keys() else False
 
-    os.system('logger Return proposal ' + str(proposal))
+    os.system('logger "Return proposal %s"' % str(proposal))
     return proposal
 
 
@@ -454,6 +467,12 @@ def _sanity_check(proposal, possible):
 
 
 def get_timer_order():
+    '''Return a tuple of: (dictionary_of_actuators_and_actions, remaining_time_in_minutes).
+    Return None if no timers active.
+    Example:
+        ({'mist': False, 'water': False}, 2)
+    '''
+
     # Process timer
     try:
        # Find last record with Timer enable
@@ -477,19 +496,23 @@ def get_timer_order():
                    was_on.remove(action)
 
            # Time gone. Check if needed action.
-           if (datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds() > secs and was_on:
+           t_diff = secs - ((datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds())
+           la = models.Actions.objects.last().get_all_fields()
+           if t_diff <= 0 and was_on:
                changed = False
-               # Avoid exception in case of empty database.
-               la = models.Actions.objects.last().get_all_fields()
                for i in was_on:
                    if la[i]:
                        la[i] = False
                        changed = True
 
-               if changed:
-                   # self.stdout.write('Timer ended: %s' % datetime.now())
-                   # self.stdout.flush()
-                   return 'Manual timer off', la
+               # if changed:
+               #     # self.stdout.write('Timer ended: %s' % datetime.now())
+               #     # self.stdout.flush()
+               #     return reason, la, t_diff / 60
+               # else:
+               #     return return reason, la, t_diff / 60
+
+           return la, t_diff / 60
 
     except (exceptions.FieldError, ValueError, KeyError) as e:
        pass  # Till any action available
