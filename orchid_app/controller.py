@@ -212,6 +212,7 @@ def get_last_automated_action(with_reason=False):
 
 # Don't use Memoize decorator here: it doesn't remove obsolete data, i.e. once read current state will never refresh even when timeout expired.
 def get_current_state():
+    temp_cs = current_state
     if not current_state:
         read_current_state()
 
@@ -223,6 +224,9 @@ def get_current_state():
     # Return empty dict and -1 if failed to retrieve current_state
     if not current_state:
         return {}, NO_DATA
+
+    if temp_cs != current_state:
+        print "State changed to:", current_state[0]['name'], 'on:', str(current_state[2])
 
     return current_state
 
@@ -382,18 +386,14 @@ def _run_state_action():
     tr = get_timer_order()
     if tr:
         ad, t_rem = tr  # Unpack timer results
-        print tr
         filt = {'reason__icontains': 'timer off'}
         qs = models.Actions.objects.filter(**filt).last()
-        print qs
         dt = (datetime.now() - qs.date.replace(tzinfo=None)).total_seconds() / 60
-        print dt, dt + t_rem, t_rem
         if t_rem < 0.5:  # Approximate to zero time. If statement t_rem <= 0 then it looks like 1 minute delay.
             activate(reason='Manual timer off', **ad)
 
         # Do not follow automated rules if timer is active.
         if dt < dt + t_rem:
-            print 'return after timer'
             return
 
     state = get_current_state()[0]  # Take dictionary only. Index doesn't matter.
@@ -410,28 +410,24 @@ def _run_state_action():
 
     la = get_last_automated_action()
     al = get_next_action()
-    print 'initial la', la
     if al:
         for act, rem_min, todo in al:
             if rem_min <= 0:
                 la[act] = todo
 
-        print 'la after next action', la
         # Sanity check: if something is on automatically and should not be in this state then turn it off.
         la = _sanity_check(la, state['action'])
 
-        print 'la after sanity', la
         # print 'Intended action for:', act_name, str(la), str(datetime.now())
         activate(reason=reason, **la)
 
 
 def _sanity_check(proposal, possible):
     possible = utils.flatten_dict(possible)
-    print "Got proposal %s" % str(proposal)
+
     for k, v in models.Actions().get_all_fields().iteritems():
         proposal[k] = proposal[k] if k in possible.keys() else False
 
-    print "Return proposal %s" % str(proposal)
     return proposal
 
 
