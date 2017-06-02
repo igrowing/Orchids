@@ -258,7 +258,7 @@ function validate() {
 
   inputs = document.getElementsByTagName("input");
   for (var i=0; i < inputs.length; i++) {
-      if (inputs[i].type == 'checkbox' && inputs[i].checked && document.getElementById('time').value == 0)  {
+      if (inputs[i].type == 'checkbox' && inputs[i].checked && document.getElementById('id_time').value == 0)  {
         // Return user decision on first checked checkbox.
         return confirm('The time is set to 0.\nThis means your command will stop automation until you shut off all actuators manually.\n\nAre you sure?');
       }

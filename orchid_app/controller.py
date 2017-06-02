@@ -11,8 +11,9 @@ from orchid_app.utils import sendmail, pushb, memoize
 
 MIN_AVG_HOURS = 0.4   # TODO: reconsider the value
 MAX_TIMEOUT = 999999  # Very long time indicated no action was found
+MANUAL_TIMEOUT = 3600
 NO_DATA = -1          # Used in get_current_state()
-VERSION = '0.1.3'
+VERSION = '0.1.4'
 
 # Global variables:
 #  Minimize page loading time.
@@ -212,6 +213,7 @@ def get_last_automated_action(with_reason=False):
 
 # Don't use Memoize decorator here: it doesn't remove obsolete data, i.e. once read current state will never refresh even when timeout expired.
 def get_current_state():
+    global current_state
     temp_cs = current_state
     if not current_state:
         read_current_state()
@@ -396,6 +398,17 @@ def _run_state_action():
         if dt < dt + t_rem:
             return
 
+    # Process time-less manual action
+    try:
+        ma = models.Actions.objects.last()
+        if ma.reason.lower() == 'manual' and any(ma.get_all_fields().values()):
+            if (datetime.utcnow() - ma.date.replace(tzinfo=None)).total_seconds() > MANUAL_TIMEOUT:
+                alert_actuator_on()
+            return
+    except:
+        # In case of no data in DB or network failure (unable to send alert), return to normal automatic work.
+        print "ERROR occurred during access to Actions DB or during attempt to send 'Too long manual on' alert.", str(datetime.now())
+
     state = get_current_state()[0]  # Take dictionary only. Index doesn't matter.
 
     # Abort calculation if no meaningful data available.
@@ -405,8 +418,7 @@ def _run_state_action():
     act_name = state['name']        # Keep name for reporting.
     reason = 'Automate for state: %s' % act_name
 
-
-    # Consider actuators off for automated actions time calculation.
+    # TODO: Consider actuators off for automated actions time calculation.
 
     la = get_last_automated_action()
     al = get_next_action()
@@ -515,6 +527,23 @@ def _diff_datetime_mins(t1, t2):
     '''
 
     return (t1 - t2).total_seconds() / 60
+
+
+@memoize(keep=3600)
+def alert_actuator_on():
+    ''' Send alert/reminder once in hour. '''
+
+    a = models.Actions.objects.last()
+    on = ', '.join([k.capitalize() for k, v in a.get_all_fields().iteritems() if v])
+    t = str(round((datetime.utcnow() - a.date.replace(tzinfo=None)).total_seconds() / 3600.0, 1))
+
+    subj = 'OrchidCare: %s turned on manually too long' % on
+    msg = "%s was turned on manually on %s and not turned off till now. (Already on for %s hours.) \n" \
+          "The automatic function of OrchidCare is blocked. Human attention is required to turn actuators off. \n" \
+          "In case you're unable to turn actuator off for some reason, proceed to System information page and click " \
+          "[Restart Runner] button. This forces all actuators off and restores automatic function of OrchidCare." % (on, str(a.date), t)
+
+    send_message(subj, msg)
 
 
 def send_message(subj, msg):
