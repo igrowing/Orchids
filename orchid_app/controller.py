@@ -12,7 +12,7 @@ from orchid_app.utils import sendmail, pushb, memoize
 MIN_AVG_HOURS = 0.4   # TODO: reconsider the value
 MAX_TIMEOUT = 999999  # Very long time indicated no action was found
 NO_DATA = -1          # Used in get_current_state()
-VERSION = '0.1.2'
+VERSION = '0.1.3'
 
 # Global variables:
 #  Minimize page loading time.

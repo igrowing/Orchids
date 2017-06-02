@@ -4,7 +4,7 @@ import django_tables2 as tables
 from datetime import datetime
 from django.core import exceptions
 from django.contrib import messages
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from . import models
@@ -18,6 +18,7 @@ warnings.filterwarnings('ignore')
 
 class SensorTable(tables.Table):
     date = tables.DateTimeColumn(short=True)  # still doesn't work.
+
     class Meta:
         model = models.Sensors
         fields = ('date', 't_amb', 't_obj', 'rh', 'lux', 'hpa', 'wind', 'water')
@@ -25,6 +26,7 @@ class SensorTable(tables.Table):
 
 class ActionTable(tables.Table):
     date = tables.DateTimeColumn(short=True)  # still doesn't work.
+
     class Meta:
         model = models.Actions
         fields = ('date', 'water', 'mist', 'fan', 'light', 'heat', 'reason')
@@ -47,6 +49,9 @@ def list(request):
     if request.method == "POST":
         if form.is_valid():
             a = parse_user_input(a, request)
+            return redirect('/')
+    else:
+        form = ActionsForm()
 
     for k, v in a.iteritems():
         a[k] = _verb(v)
@@ -77,10 +82,94 @@ def list(request):
     al = _get_next_actions_parsed()
     tl = _get_timer_actions_parsed()
 
-    return render(request, 'orchid_app/sensor_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table,
-                                                           'actuators': a, 'statuses': statuses, 'actionList': al,
-                                                           'timerList': tl,
-                                                           })
+    context = {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a, 'statuses': statuses,
+               'actionList': al, 'timerList': tl,
+               }
+
+    return render(request, 'orchid_app/sensor_list.html', context)
+
+
+def action_list(request):
+    form = ActionsForm(request.POST or None, auto_id=True)
+    a = controller.get_last_action()
+    if request.method == "POST":
+        if form.is_valid():
+            a = parse_user_input(a, request)
+            # Use POST-Redirect-GET concept (PRG). This avoids "form resubmission" from browser on page refresh (F5).
+            # Huge notice: The redirection path is RELATIVE. It relates to the page the form is loaded.
+            # Therefore, an argumant for every redirect must start with slash /, which means 'absolute path from root of the app'.
+            return redirect('/actions/')
+    else:
+        form = ActionsForm()
+
+    # Standartize/verbose actuator form values.
+    for k, v in a.iteritems():
+        a[k] = _verb(v)
+
+    form.water = a.water
+    qs = models.Actions.objects.all().order_by('-date')  # filter(date=request.date
+    paginator = Paginator(qs, 30)
+    page = request.GET.get('page')
+    try:
+        table = paginator.page(page)
+    except PageNotAnInteger:
+        table = paginator.page(1)
+    except EmptyPage:
+        table = paginator.page(paginator.num_pages)
+
+    # Keep reference to page. Dirty trick. TODO: improve.
+    pp = table
+    # Convert current page into table.
+    table = ActionTable(table)
+
+    total = qs.count()
+
+    statuses = [False for i in range(len(controller.state_list))]
+    i = controller.get_current_state()[1]
+    if i != controller.NO_DATA:
+        statuses[i] = True
+
+    al = _get_next_actions_parsed()
+    tl = _get_timer_actions_parsed()
+
+    context = {'form': form, 'paginator': pp, 'total': total, 'table': table, 'actuators': a, 'statuses': statuses,
+               'actionList': al, 'timerList': tl,
+               }
+
+    return render(request, 'orchid_app/action_list.html', context)
+
+
+def sysinfo_list(request):
+    form = SystemForm(request.POST or None)
+    if request.method == "POST":
+        if form.is_valid():
+            if 'update' in request.POST:
+                print 'User requested the firmware update.'
+                msg = 'User requested the firmware update.'
+                res = controller.update_firmware()
+            elif 'restart' in request.POST:
+                print 'user requested runner restart.'
+                msg = 'user requested runner restart.'
+                res = os.system('sudo service orchid_runner restart') == 0
+
+            if res:
+                messages.success(request, "Actions taken: " + msg)
+            else:
+                messages.error(request, "Actions failed: " + msg)
+            return redirect('/sysinfo/')
+    else:
+        form = SystemForm()
+
+    si = sysinfo.get_sysinfo_html()
+    chart_data = sysinfo.get_sysinfo_d()
+    charts = {
+        'CPU': chart_data['cpu']['load']['current'],
+        'RAM': chart_data['memory']['RAM_MB']['percent'],
+        'Flash': chart_data['memory']['flash_GB']['percent'],
+        'Temp': chart_data['cpu']['temp']['current'],
+    }
+
+    return render(request, 'orchid_app/sysinfo_list.html', {'form': form, 'sysinfo': si, 'charts': charts})
 
 
 def parse_user_input(a, request):
@@ -105,13 +194,13 @@ def parse_user_input(a, request):
             # Else Do 0-time actions immediately.
             suffix = ' with timer for %s minutes' % time
 
-        # # For OFF action.
-        # # Set 'Automate' reason and Turn off actuator if was enabled automatically.
-        # # Else Set 'Manual' reason and Turn off actuator.
-        # if controller.is_enabled(automate=True, actuator=k):
-        #     reason = 'Automate overridden by user'
-        #     # Stop other actions compare. One overriding action is important and enough
-        #     break
+            # # For OFF action.
+            # # Set 'Automate' reason and Turn off actuator if was enabled automatically.
+            # # Else Set 'Manual' reason and Turn off actuator.
+            # if controller.is_enabled(automate=True, actuator=k):
+            #     reason = 'Automate overridden by user'
+            #     # Stop other actions compare. One overriding action is important and enough
+            #     break
 
     msg = controller.activate(reason=reason + suffix, mist=a.mist, drip=a.water, fan=a.fan, light=a.light, heat=a.heat)
     if [i for i in ['wrong', 'skip'] if i not in msg.lower()]:
@@ -161,79 +250,6 @@ def _get_timer_actions_parsed():
         print 'Error DB query, looking for timer', repr(e)  # Till any action available
 
     return res
-
-
-def action_list(request):
-    form = ActionsForm(request.POST or None)
-    a = controller.get_last_action()
-    if request.method == "POST":
-        if form.is_valid():
-            a = parse_user_input(a, request)
-
-    # Standartize/verbose actuator form values.
-    for k, v in a.iteritems():
-        a[k] = _verb(v)
-
-    form.water = a.water
-    qs = models.Actions.objects.all().order_by('-date')  # filter(date=request.date
-    paginator = Paginator(qs, 30)
-    page = request.GET.get('page')
-    try:
-        table = paginator.page(page)
-    except PageNotAnInteger:
-        table = paginator.page(1)
-    except EmptyPage:
-        table = paginator.page(paginator.num_pages)
-
-    # Keep reference to page. Dirty trick. TODO: improve.
-    pp = table
-    # Convert current page into table.
-    table = ActionTable(table)
-
-    total = qs.count()
-
-    statuses = [False for i in range(len(controller.state_list))]
-    i = controller.get_current_state()[1]
-    if i != controller.NO_DATA:
-        statuses[i] = True
-
-    al = _get_next_actions_parsed()
-    tl = _get_timer_actions_parsed()
-
-    return render(request, 'orchid_app/action_list.html', {'form': form, 'paginator': pp, 'total': total, 'table': table,
-                                                           'actuators': a, 'statuses': statuses, 'actionList': al,
-                                                           'timerList': tl,
-                                                           })
-
-
-def sysinfo_list(request):
-    form = SystemForm(request.POST or None)
-    if request.method == "POST":
-        if form.is_valid():
-            if 'update' in request.POST:
-                print 'User requested the firmware update.'
-                msg = 'User requested the firmware update.'
-                res = controller.update_firmware()
-            elif 'restart' in request.POST:
-                print 'user requested runner restart.'
-                msg = 'user requested runner restart.'
-                res = os.system('sudo service orchid_runner restart') == 0
-
-            if res:
-                messages.success(request, "Actions taken: " + msg)
-            else:
-                messages.error(request, "Actions failed: " + msg)
-
-    si = sysinfo.get_sysinfo_html()
-    chart_data = sysinfo.get_sysinfo_d()
-    charts = {
-        'CPU': chart_data['cpu']['load']['current'],
-        'RAM': chart_data['memory']['RAM_MB']['percent'],
-        'Flash': chart_data['memory']['flash_GB']['percent'],
-        'Temp': chart_data['cpu']['temp']['current'],
-    }
-
-    return render(request, 'orchid_app/sysinfo_list.html', {'form': form, 'sysinfo': si, 'charts': charts})
 
 
 def _verb(b):
