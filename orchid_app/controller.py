@@ -35,6 +35,9 @@ PRIM_ACTIONS = ['water', 'mist', 'fan', 'heat', 'light']  # 'mix' is not in prim
 # In this example, sum of on+off time for each actuator = full cycle time. 5+40=45, 10+35=45.
 MIX_ORDER = ['mist', 'fan']  # Define action priority in mix.
 
+# In my installation it flows 2.1l water/minute for 16 drippers
+# TODO: consider watering by liters, not by time.
+
 state_list = [
     {'name': 't0h0w0', 'avg': MIN_AVG_HOURS,  # Don't average, emergency state.
      'criteria': {'tmin': 0, 'tmax': 6, 'hmin': 0, 'hmax': 100.1, 'wmin': 0, 'wmax': 100},
@@ -44,46 +47,46 @@ state_list = [
      'action': {'mist': [60, 10020]}},  # Mist for 1 hour in a week.
     {'name': 't6h40w0', 'avg': 24,
      'criteria': {'tmin': 6, 'tmax': 17, 'hmin': 40, 'hmax': 80, 'wmin': 0, 'wmax': 100},
-     'action': {'water': [5, 20155]}},  # Water for 5 min in 2 weeks.
+     'action': {'water': [3, 20157]}},  # Water for 5 min in 2 weeks.
     {'name': 't6h80w0', 'avg': 24,
      'criteria': {'tmin': 6, 'tmax': 17, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 100},
-     'action': {'water': [5, 20155]}},  # Water for 5 min in 2 weeks.
+     'action': {'water': [3, 20157]}},  # Water for 5 min in 2 weeks.
     {'name': 't17h0w0', 'avg': 12,
      'criteria': {'tmin': 17, 'tmax': 25, 'hmin': 0, 'hmax': 40, 'wmin': 0, 'wmax': 100},
-     'action': {'water': [5, 10075], 'mist': [60, 2820]}},  # Water for 5 min in 1 week. Mist for 1 hour every 2 days.
+     'action': {'water': [3, 10077], 'mist': [60, 2820]}},  # Water for 5 min in 1 week. Mist for 1 hour every 2 days.
     {'name': 't17h40w0', 'avg': 12,
      'criteria': {'tmin': 17, 'tmax': 25, 'hmin': 40, 'hmax': 100.1, 'wmin': 0, 'wmax': 100},
-     'action': {'water': [5, 10075]}},  # Water for 5 min in 1 week.
+     'action': {'water': [3, 10077]}},  # Water for 5 min in 1 week.
     {'name': 't25h0w0', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 0, 'wmax': 2},
-     'action': {'water': [5, 10075], 'mix': {'mist': [30, 1410], 'fan': [60, 1380]}}},  # Water for 5 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with fan for 1 hour.
+     'action': {'water': [3, 10077], 'mix': {'mist': [30, 1410], 'fan': [60, 1380]}}},  # Water for 5 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with fan for 1 hour.
     {'name': 't25h0w2', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 2, 'wmax': 100},
-     'action': {'water': [5, 10075], 'mist': [30, 1410]}},  # Water for 30 min in 1 week. Mist for 30 minutes every day.
+     'action': {'water': [3, 10077], 'mist': [30, 1410]}},  # Water for 30 min in 1 week. Mist for 30 minutes every day.
     {'name': 't25h40w0', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 0, 'wmax': 2},
-     'action': {'water': [5, 10075], 'mix': {'mist': [5, 1435], 'fan': [60, 1380]}}},  # Water for 5 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with fan for 1 hour.
+     'action': {'water': [3, 10077], 'mix': {'mist': [5, 1435], 'fan': [60, 1380]}}},  # Water for 5 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with fan for 1 hour.
     {'name': 't25h40w2', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 2, 'wmax': 100},
-     'action': {'water': [5, 10075], 'mist': [5, 1435]}},  # Water for 5 min in 1 week. Mist for 5 minutes every day.
+     'action': {'water': [3, 10077], 'mist': [5, 1435]}},  # Water for 5 min in 1 week. Mist for 5 minutes every day.
     {'name': 't25h80w0', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 2},
-     'action': {'water': [5, 10075], 'fan': [60, 1380]}},  # Water for 5 min in 1 week. fan for 1 hour at the most light and no wind.
+     'action': {'water': [3, 10077], 'fan': [60, 1380]}},  # Water for 5 min in 1 week. fan for 1 hour at the most light and no wind.
     {'name': 't25h80w2', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 80, 'hmax': 100.1, 'wmin': 2, 'wmax': 100},
-     'action': {'water': [5, 10075]}},  # Water for 5 min in 1 week.
+     'action': {'water': [3, 10077]}},  # Water for 5 min in 1 week.
     {'name': 't28h0w0', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 0, 'wmax': 2},
-     'action': {'water': [7, 10073], 'mix': {'mist': [30, 90], 'fan': [60, 60]}}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with fan for 1 hour.
+     'action': {'water': [3, 10077], 'mix': {'mist': [30, 90], 'fan': [60, 60]}}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with fan for 1 hour.
     {'name': 't28h0w2', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 2, 'wmax': 100},
-     'action': {'water': [7, 10073], 'mist': [30, 90]}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light.
+     'action': {'water': [3, 10077], 'mist': [30, 90]}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light.
     {'name': 't28h80w0', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 2},
-     'action': {'water': [7, 10073], 'fan': [30, 90]}},  # Water for 30 min in 1 week. fan for 30 minutes at the most light and no wind.
+     'action': {'water': [3, 10077], 'fan': [30, 90]}},  # Water for 30 min in 1 week. fan for 30 minutes at the most light and no wind.
     {'name': 't28h80w2', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100.1, 'wmin': 2, 'wmax': 100},
-     'action': {'water': [7, 10073]}},  # Water for 30 min in 1 week.
+     'action': {'water': [3, 10077]}},  # Water for 30 min in 1 week.
     {'name': 't36h0w0', 'avg': MIN_AVG_HOURS,  # Don't average, emergency state.
      'criteria': {'tmin': 36, 'tmax': 100, 'hmin': 0, 'hmax': 100.1, 'wmin': 0, 'wmax': 100},
      'action': {'mix': {'mist': [30, 30], 'fan': [30, 30]}, 'ac': [60, 0], 'shade': [400, 0]}},  # When t_amb > 36 or t_obj > 25
@@ -365,8 +368,8 @@ def get_next_action():
                 next_action = not la[mix_action]
                 result.append((mix_action, next_change_in_min, next_action))
                 # Exit the mix actions loop if action was Turn on: when mist is on, no need to turn on the fan. When mist is off then fan will be activated
-                if next_action:
-                    break
+                # if next_action:
+                #     break
         else:  # Skip non-implemented actuators
             pass
 
@@ -421,9 +424,7 @@ def _run_state_action():
     # TODO: Consider actuators off for automated actions time calculation.
 
     la = get_last_automated_action()
-    print 'Last automated:', str(la)
     al = get_next_action()
-    print 'Initial next action:', str(al)
     if al:
         for act, rem_min, todo in al:
             if rem_min <= 0:
@@ -431,7 +432,7 @@ def _run_state_action():
 
         # Sanity check: if something is on automatically and should not be in this state then turn it off.
         la = _sanity_check(la, state['action'])
-        print "After sanity action", str(la)
+
         # print 'Intended action for:', act_name, str(la), str(datetime.now())
         activate(reason=reason, **la)
 
@@ -441,6 +442,9 @@ def _sanity_check(proposal, possible):
 
     for k, v in models.Actions().get_all_fields().iteritems():
         proposal[k] = proposal[k] if k in possible.keys() else False
+
+    if proposal['mist'] and proposal['fan']:
+        proposal['fan'] = False
 
     return proposal
 
