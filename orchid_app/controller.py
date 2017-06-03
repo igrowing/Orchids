@@ -421,7 +421,9 @@ def _run_state_action():
     # TODO: Consider actuators off for automated actions time calculation.
 
     la = get_last_automated_action()
+    print 'Last automated:', str(la)
     al = get_next_action()
+    print 'Initial next action:', str(al)
     if al:
         for act, rem_min, todo in al:
             if rem_min <= 0:
@@ -429,7 +431,7 @@ def _run_state_action():
 
         # Sanity check: if something is on automatically and should not be in this state then turn it off.
         la = _sanity_check(la, state['action'])
-
+        print "After sanity action", str(la)
         # print 'Intended action for:', act_name, str(la), str(datetime.now())
         activate(reason=reason, **la)
 
@@ -443,7 +445,7 @@ def _sanity_check(proposal, possible):
     return proposal
 
 
-def get_timer_order():
+def get_timer_order(seconds=False):
     '''Return a tuple of: (dictionary_of_actuators_and_actions, remaining_time_in_minutes).
     Return None if no timers active.
     Example:
@@ -452,38 +454,38 @@ def get_timer_order():
 
     # Process timer
     try:
-       # Find last record with Timer enable
-       filt = {'reason__icontains': 'with timer'}
-       qs = models.Actions.objects.filter(**filt).last()
+        # Find last record with Timer enable
+        filt = {'reason__icontains': 'with timer'}
+        qs = models.Actions.objects.filter(**filt).last()
 
-       if qs:
-           # Validate whether the action was disabled automatically already. Skip changes if found.
-           last_on_id = qs.id
-           min_l = re.findall('(\d+) min', qs.reason.lower())
-           secs = int(min_l[0]) * 60 if min_l else 0
+        if qs:
+            # Validate whether the action was disabled automatically already. Skip changes if found.
+            last_on_id = qs.id
+            min_l = re.findall('(\d+) min', qs.reason.lower())
+            secs = int(min_l[0]) * 60 if min_l else 0
 
-           # Collect what was on in list
-           was_on = [k for k, v in qs.get_all_fields().iteritems() if v]
+            # Collect what was on in list
+            was_on = [k for k, v in qs.get_all_fields().iteritems() if v]
 
-           # Filter out from was_on all actions that were disabled later (manually or automatically)
-           for action in was_on:
-               filt = {action: False, 'id__gt': last_on_id}
-               qs1 = models.Actions.objects.filter(**filt).first()
-               if qs1:
-                   was_on.remove(action)
+            # Filter out from was_on all actions that were disabled later (manually or automatically)
+            for action in was_on:
+                filt = {action: False, 'id__gt': last_on_id}
+                qs1 = models.Actions.objects.filter(**filt).first()
+                if qs1:
+                    was_on.remove(action)
 
-           # Time gone. Check if needed action.
-           t_diff = secs - ((datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds())
-           la = models.Actions.objects.last().get_all_fields()
-           if t_diff <= 0 and was_on:
-               for i in was_on:
-                   if la[i]:
-                       la[i] = False
+            # Time gone. Check if needed action.
+            t_diff = secs - ((datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds())
+            la = models.Actions.objects.last().get_all_fields()
+            if t_diff <= 0 and was_on:
+                for i in was_on:
+                    if la[i]:
+                        la[i] = False
 
-           return la, t_diff / 60
+            return la, t_diff if seconds else (t_diff / 60)
 
     except (exceptions.FieldError, ValueError, KeyError) as e:
-       pass  # Till any action available
+        pass  # Till any action available
 
 
 def get_last_change_minutes(actuator, is_on):

@@ -97,7 +97,7 @@ def action_list(request):
             a = parse_user_input(a, request)
             # Use POST-Redirect-GET concept (PRG). This avoids "form resubmission" from browser on page refresh (F5).
             # Huge notice: The redirection path is RELATIVE. It relates to the page the form is loaded.
-            # Therefore, an argumant for every redirect must start with slash /, which means 'absolute path from root of the app'.
+            # Therefore, an argument for every redirect must start with slash /, which means 'absolute path from root of the app'.
             return redirect('/actions/')
     else:
         form = ActionsForm()
@@ -228,26 +228,21 @@ def _get_timer_actions_parsed():
     '''
     # Process timer
     res = []
-    try:
-        # Find last record with Timer enable
-        filt = {'reason__icontains': 'with timer'}
-        qs = models.Actions.objects.filter(**filt).last()
+    tr = controller.get_timer_order(seconds=True)
 
-        if 'with timer' in qs.reason.lower():
-            min_l = re.findall('(\d+) min', qs.reason.lower())
-            secs = int(min_l[0]) * 60 if min_l else 0
-            was_on = [k for k, v in qs.get_all_fields().iteritems() if v]
-            if was_on:
-                # Avoid exception in case of empty database.
-                la = models.Actions.objects.last().get_all_fields()
-                # print 'was_on', str(was_on), 'secs', str(secs), 'la', repr(la)
-                for i in was_on:
-                    if la[i]:  # was on and still on
-                        dt = max(0, secs - (datetime.utcnow() - qs.date.replace(tzinfo=None)).total_seconds())
-                        res.append((i.capitalize(), _verb(not la[i]).capitalize(), 'Now' if dt < 1 else _humanize(dt, with_secs=True)))
+    if tr:
+        ad, t_rem = tr  # Unpack timer results
+        # filt = {'reason__icontains': 'timer off'}
+        # qs = models.Actions.objects.filter(**filt).last()
+        # dt = (datetime.now() - qs.date.replace(tzinfo=None)).total_seconds() / 60
 
-    except (exceptions.FieldError, ValueError, KeyError) as e:
-        print 'Error DB query, looking for timer', repr(e)  # Till any action available
+        # Do not follow automated rules if timer is active.
+        # if dt < dt + t_rem:
+        if 0 < t_rem:
+            for i in ad:
+                # t_rem = max(0, t_rem)
+                if ad[i]:
+                    res.append((i.capitalize(), _verb(not ad[i]).capitalize(), 'Now' if t_rem < 1 else _humanize(t_rem, with_secs=True)))
 
     return res
 
