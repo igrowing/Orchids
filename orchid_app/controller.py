@@ -77,10 +77,10 @@ state_list = [
      'action': {'water': [3, 10077]}},  # Water for 5 min in 1 week.
     {'name': 't28h0w0', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 0, 'wmax': 2},
-     'action': {'water': [3, 10077], 'mix': {'mist': [30, 90], 'fan': [60, 60]}}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with fan for 1 hour.
+     'action': {'water': [3, 10077], 'mix': {'mist': [15, 60], 'fan': [30, 45]}}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with fan for 1 hour.
     {'name': 't28h0w2', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 2, 'wmax': 100},
-     'action': {'water': [3, 10077], 'mist': [30, 90]}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light.
+     'action': {'water': [3, 10077], 'mist': [15, 60]}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light.
     {'name': 't28h80w0', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 2},
      'action': {'water': [3, 10077], 'fan': [30, 90]}},  # Water for 30 min in 1 week. fan for 30 minutes at the most light and no wind.
