@@ -10,8 +10,9 @@ while true; do
   # Get HTTP response on VPS side. It must include word Last. If not, increase counter.
   if ! [[ "$resp" =~ "Last" ]]; then
     let COUNT_W+=1
+  else
+    let COUNT_W=0
   fi
-  logger 'HTTP counter: $COUNT_W'
   if [ $COUNT_W -gt 2 ]; then
     PID=`ps -ef | grep ssh | grep 10080 | awk '{ print $2 }'`
     logger Exceeded timeout of non-responsive HTTP for more than $COUNT_W minutes. Killing old pid: $PID. Restarting HTTP reverse tunnel.
@@ -20,12 +21,13 @@ while true; do
     nohup ssh -fN -R 198.57.47.238:10080:localhost:8001 orchid@198.57.47.238 &
     let COUNT_W=0
   fi
-  logger 'HTTP counter (zeroed?): $COUNT_W'
 
   # check if reverse SSH is able to communicate (bring hostname from orchid farm)
   resp=`runuser -l pi -c 'ssh root@198.57.47.238 "timeout 30 ssh -p 10022 pi@localhost hostname"'`
   if ! [[ "$resp" =~ "orchid" ]] ; then
     let COUNTER+=1
+  else
+    let COUNTER=0
   fi
   # If 3 minutes there is not SSH communication then restart all ssh and the counter
   if [  $COUNTER -gt 2 ]; then
