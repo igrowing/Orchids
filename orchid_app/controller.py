@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import time
+import copy
 from django.core import exceptions
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -13,7 +14,7 @@ MIN_AVG_HOURS = 0.4   # TODO: reconsider the value
 MAX_TIMEOUT = 999999  # Very long time indicated no action was found
 MANUAL_TIMEOUT = 3600
 NO_DATA = -1          # Used in get_current_state()
-VERSION = '0.1.4'
+VERSION = '0.1.6'
 
 # Global variables:
 #  Minimize page loading time.
@@ -59,13 +60,13 @@ state_list = [
      'action': {'water': [3, 10077]}},  # Water for 5 min in 1 week.
     {'name': 't25h0w0', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 0, 'wmax': 2},
-     'action': {'water': [3, 10077], 'mix': {'mist': [30, 1410], 'fan': [60, 1380]}}},  # Water for 5 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with fan for 1 hour.
+     'action': {'water': [3, 10077], 'mix': {'mist': [10, 1430], 'fan': [30, 1410]}}},  # Water for 5 min in 1 week. Mist for 30 minutes every day at the most light. Interleave mist with fan for 1 hour.
     {'name': 't25h0w2', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 0, 'hmax': 40, 'wmin': 2, 'wmax': 100},
-     'action': {'water': [3, 10077], 'mist': [30, 1410]}},  # Water for 30 min in 1 week. Mist for 30 minutes every day.
+     'action': {'water': [3, 10077], 'mist': [10, 1430]}},  # Water for 30 min in 1 week. Mist for 30 minutes every day.
     {'name': 't25h40w0', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 0, 'wmax': 2},
-     'action': {'water': [3, 10077], 'mix': {'mist': [5, 1435], 'fan': [60, 1380]}}},  # Water for 5 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with fan for 1 hour.
+     'action': {'water': [3, 10077], 'mix': {'mist': [5, 1435], 'fan': [30, 1410]}}},  # Water for 5 min in 1 week. Mist for 5 minutes every day at the most light. Interleave mist with fan for 1 hour.
     {'name': 't25h40w2', 'avg': 2,
      'criteria': {'tmin': 25, 'tmax': 28, 'hmin': 40, 'hmax': 80, 'wmin': 2, 'wmax': 100},
      'action': {'water': [3, 10077], 'mist': [5, 1435]}},  # Water for 5 min in 1 week. Mist for 5 minutes every day.
@@ -77,10 +78,10 @@ state_list = [
      'action': {'water': [3, 10077]}},  # Water for 5 min in 1 week.
     {'name': 't28h0w0', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 0, 'wmax': 2},
-     'action': {'water': [3, 10077], 'mix': {'mist': [15, 60], 'fan': [30, 45]}}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with fan for 1 hour.
+     'action': {'water': [3, 10077], 'mix': {'mist': [10, 65], 'fan': [30, 45]}}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light. Interleave mist with fan for 1 hour.
     {'name': 't28h0w2', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 0, 'hmax': 80, 'wmin': 2, 'wmax': 100},
-     'action': {'water': [3, 10077], 'mist': [15, 60]}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light.
+     'action': {'water': [3, 10077], 'mist': [10, 65]}},  # Water for 30 min in 1 week. Mist for 30 minutes every 2 hours at the most light.
     {'name': 't28h80w0', 'avg': 1,
      'criteria': {'tmin': 28, 'tmax': 36, 'hmin': 80, 'hmax': 100.1, 'wmin': 0, 'wmax': 2},
      'action': {'water': [3, 10077], 'fan': [30, 90]}},  # Water for 30 min in 1 week. fan for 30 minutes at the most light and no wind.
@@ -153,6 +154,64 @@ def activate(reason='unknown', force=False, **kwargs):
     return ', '.join(msg)
 
 
+def get_last_actuator_action(actuator, state=None, before_id=None):
+    '''Return tuple:
+    (datetime, actuator_name, state, reason, id).
+
+    If argument state is provided, return the tuple for desired state of actuator.
+    If no action found, return None.
+    '''
+
+    try:
+        # Avoid exception in case of empty database.
+        filt = {}
+        if before_id:
+            filt['id__lt'] = before_id
+
+        if state:
+            filt[actuator] = state
+
+        if filt:
+            la = models.Actions.objects.filter(**filt).last()
+        else:
+            la = models.Actions.objects.last()
+
+        return la.date, actuator, la.get_all_fields()[actuator], la.reason, la.id
+
+    except (exceptions.FieldError, ValueError, KeyError) as e:
+        sys.stderr.write('Error DB query: %s (%s)' % (e.message, type(e)))
+
+
+def is_action_automated(id=None, reason=None):
+    '''Return whether action was automated or manual.
+    Return result os last action if no id and no reason provided.
+    Return None if no action found.
+
+    Manual action is an action with "Manual" reason.
+    All other actions are automated, including timer off.
+
+    reason argument gets precedence over id.
+    '''
+
+    def is_manual(r):
+        is_man = re.findall('manual$', r.lower())
+        return not len(is_man) > 0
+
+    if reason:
+        return is_manual(reason)
+
+    try:
+        if id:
+            a = models.Actions.objects.all()[id]
+        else:
+            a = models.Actions.objects.last()
+
+        return is_manual(a.reason)
+
+    except (exceptions.FieldError, ValueError, KeyError) as e:
+        sys.stderr.write('Error DB query: %s (%s)' % (e.message, type(e)))
+
+
 def get_last_action(with_reason=False):
     '''
     :return: Dictionary of statuses of all actuators. Does not contain non-actuator data (ID, date, reason)
@@ -217,7 +276,7 @@ def get_last_automated_action(with_reason=False):
 # Don't use Memoize decorator here: it doesn't remove obsolete data, i.e. once read current state will never refresh even when timeout expired.
 def get_current_state():
     global current_state
-    temp_cs = current_state
+    temp_cs = copy.copy(current_state)
     if not current_state:
         read_current_state()
 
@@ -228,7 +287,7 @@ def get_current_state():
 
     # Return empty dict and -1 if failed to retrieve current_state
     if not current_state:
-        return {}, NO_DATA
+        return {}, NO_DATA, NO_DATA
 
     if temp_cs != current_state:
         print "State changed to:", current_state[0]['name'], 'on:', str(current_state[2])
@@ -408,7 +467,7 @@ def _run_state_action():
             if (datetime.utcnow() - ma.date.replace(tzinfo=None)).total_seconds() > MANUAL_TIMEOUT:
                 alert_actuator_on()
             return
-    except:
+    except (exceptions.FieldError, ValueError, KeyError) as e:
         # In case of no data in DB or network failure (unable to send alert), return to normal automatic work.
         print "ERROR occurred during access to Actions DB or during attempt to send 'Too long manual on' alert.", str(datetime.now())
 
@@ -421,23 +480,48 @@ def _run_state_action():
     act_name = state['name']        # Keep name for reporting.
     reason = 'Automate for state: %s' % act_name
 
-    # TODO: Consider actuators off for automated actions time calculation.
+    try:
+        lm = models.Actions.objects.last().get_all_fields()
+    except (exceptions.FieldError, ValueError, KeyError) as e:
+        lm = {}
 
     la = get_last_automated_action()
     al = get_next_action()
+    is_manual = not is_action_automated()
+    override = {}  # Add here actions which were disabled manually
+    force = False   # Flag when time for action should be forced.
     if al:
+        # Sanity check: if something is on automatically and should not be in this state then turn it off.
+        la = _sanity_check(la, state['action'])
+
         for act, rem_min, todo in al:
+            # Check if last action was manual for off to specific action then keep it off.
+            if is_manual and lm and not lm[act]:
+                override[act] = False
+
             if rem_min <= 0:
+                # Perform regular action when time comes.
                 la[act] = todo
+                force = len(override) > 0
+            elif act in override:
+                # Override re-enable of actuator is manually forced off.
+                la[act] = override[act]
 
         # Sanity check: if something is on automatically and should not be in this state then turn it off.
         la = _sanity_check(la, state['action'])
 
         # print 'Intended action for:', act_name, str(la), str(datetime.now())
-        activate(reason=reason, **la)
+        activate(reason=reason, force=force, **la)
 
 
 def _sanity_check(proposal, possible):
+    '''Compare proposal action with appropriate for current state action.
+    Enable/disable actuators that don't comply with possible action.
+    E.g. if light is not in possible actions and it is on, then off it.
+
+    Give priority to mist over fan.
+    '''
+
     possible = utils.flatten_dict(possible)
 
     for k, v in models.Actions().get_all_fields().iteritems():
