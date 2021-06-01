@@ -71,7 +71,7 @@ spidev==3.0
 stevedore==1.20.0
 traitlets==4.3.2
 twython==3.1.2
-urllib3==1.9.1
+urllib3==1.26.5
 urwid==1.2.1
 virtualenv==15.1.0
 virtualenv-clone==0.2.6
