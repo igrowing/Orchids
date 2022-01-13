@@ -6,7 +6,7 @@ Django==1.10.5
 Flask==0.10.1
 Jinja2==2.7.3
 MarkupSafe==0.23
-Pillow==2.6.1
+Pillow==9.0.0
 RPi.GPIO==0.6.3
 RTIMULib==7.2.1
 Werkzeug==0.9.6
