@@ -26,7 +26,7 @@ functools32==3.2.3-2
 gpiozero==1.3.1
 hiredis==0.2.0
 html5lib==0.999
-ipython==2.3.0
+ipython==7.16.3
 ipython-genutils==0.2.0
 itsdangerous==0.24
 jsonschema==2.6.0
